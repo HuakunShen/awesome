@@ -36,3 +36,5 @@ jobs:
         run: |
           pnpm build
           pnpm test
+      - name: Update Data
+        run: pnpm scrape
