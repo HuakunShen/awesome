@@ -1,7 +1,7 @@
 import { githubGraphql } from "github-graphql"
 import { getSdk } from "github-graphql/req"
 import { GraphQLClient } from "graphql-request"
-import { GITHUB_API_TOKEN, PB_URL } from "./constant"
+import { GITHUB_TOKEN, PB_URL } from "./constant"
 import { getGithubRepoMetadataUrl, getGithubRepoToReadmeUrl } from "./url"
 
 export async function fetchGitHubRepoReadme(owner: string, repo: string): Promise<string> {
@@ -17,7 +17,7 @@ export async function fetchGitHubRepoMetadata(
 ): Promise<githubGraphql.RepositoryQuery["repository"] | null> {
 	const client = new GraphQLClient("https://api.github.com/graphql", {
 		headers: {
-			authorization: `Bearer ${GITHUB_API_TOKEN}`,
+			authorization: `Bearer ${GITHUB_TOKEN}`,
 			"User-Agent": "GitHub GraphQL SDK"
 		}
 	})

@@ -5,7 +5,7 @@ import { getSdk } from "../src/generated/req"
 test("Get repo info", async () => {
 	const client = new GraphQLClient("https://api.github.com/graphql", {
 		headers: {
-			authorization: `Bearer ${Bun.env.GITHUB_API_TOKEN}`,
+			authorization: `Bearer ${Bun.env.GITHUB_TOKEN}`,
 			"User-Agent": "GitHub GraphQL SDK"
 		}
 	})

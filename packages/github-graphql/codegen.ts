@@ -1,8 +1,8 @@
 import type { CodegenConfig } from "@graphql-codegen/cli"
 
-const GITHUB_API_TOKEN = Bun.env.GITHUB_API_TOKEN
-if (!GITHUB_API_TOKEN) {
-	throw new Error("GITHUB_API_TOKEN is not set")
+const GITHUB_TOKEN = Bun.env.GITHUB_TOKEN
+if (!GITHUB_TOKEN) {
+	throw new Error("GITHUB_TOKEN is not set")
 }
 
 const config: CodegenConfig = {
@@ -10,7 +10,7 @@ const config: CodegenConfig = {
 	schema: {
 		"https://api.github.com/graphql": {
 			headers: {
-				authorization: `Bearer ${GITHUB_API_TOKEN}`,
+				authorization: `Bearer ${GITHUB_TOKEN}`,
 				"User-Agent": "GitHub GraphQL SDK"
 			}
 		}

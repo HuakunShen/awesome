@@ -7,8 +7,15 @@ const __dirname = path.dirname(__filename)
 const repoRoot = path.resolve(__dirname, "..")
 const rootEnvPath = path.join(repoRoot, ".env")
 if (!fs.existsSync(rootEnvPath)) {
-	console.error(`.env file not found at ${rootEnvPath}`)
-	process.exit(1)
+	Bun.write(
+		rootEnvPath,
+		`
+PB_URL=${process.env.PB_URL}
+PB_ADMIN_USERNAME=${process.env.PB_ADMIN_USERNAME}
+PB_ADMIN_PASSWORD=${process.env.PB_ADMIN_PASSWORD}
+GITHUB_TOKEN	=${process.env.GITHUB_TOKEN}
+`
+	)
 }
 
 const targetPkgPaths = ["apps/web", "packages/scraper", "packages/github-graphql", "packages/db"]

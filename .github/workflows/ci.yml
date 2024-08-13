@@ -27,7 +27,7 @@ jobs:
           PB_URL: ${{ secrets.PB_URL }}
           PB_ADMIN_USERNAME: ${{ secrets.PB_ADMIN_USERNAME }}
           PB_ADMIN_PASSWORD: ${{ secrets.PB_ADMIN_PASSWORD }}
-          GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           bun scripts/init-env-vars.ts
       - name: Install Dependencies
