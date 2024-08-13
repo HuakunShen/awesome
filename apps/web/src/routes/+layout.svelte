@@ -1,9 +1,9 @@
 <script>
-  import "../app.css";
-  import { ThemeWrapper, ModeWatcher } from "@kksh/svelte";
+	import "../app.css"
+	import { ModeWatcher, ThemeWrapper } from "@kksh/svelte"
 </script>
 
 <ModeWatcher />
 <ThemeWrapper>
-  <slot></slot>
+	<slot></slot>
 </ThemeWrapper>

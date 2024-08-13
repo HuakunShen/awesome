@@ -1,0 +1,43 @@
+query Repository($owner: String!, $name: String!) {
+	repository(owner: $owner, name: $name) {
+		stargazerCount
+		forkCount
+		createdAt
+		description
+		hasDiscussionsEnabled
+		hasIssuesEnabled
+		forkingAllowed
+		diskUsage
+		hasSponsorshipsEnabled
+		homepageUrl
+		createdAt
+		pushedAt
+		updatedAt
+		name
+		owner {
+			login
+		}
+		url
+		watchers {
+			totalCount
+		}
+		openIssues: issues(states: OPEN) {
+			totalCount
+		}
+		closedIssues: issues(states: CLOSED) {
+			totalCount
+		}
+		pullRequests {
+			totalCount
+		}
+		pushedAt
+		releases {
+			totalCount
+		}
+		licenseInfo {
+			key
+			name
+			nickname
+		}
+	}
+}

@@ -1,19 +1,26 @@
 {
-  "name": "awesome",
-  "private": true,
-  "scripts": {
-    "build": "turbo build",
-    "dev": "turbo dev",
-    "lint": "turbo lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
-  },
-  "devDependencies": {
-    "prettier": "^3.2.5",
-    "turbo": "^2.0.12",
-    "typescript": "^5.4.5"
-  },
-  "packageManager": "pnpm@9.7.0",
-  "engines": {
-    "node": ">=18"
-  }
+	"name": "awesome",
+	"private": true,
+	"scripts": {
+		"postinstall": "npm run init-env-vars",
+		"init-env-vars": "bun scripts/init-env-vars.ts",
+		"build": "turbo build",
+		"test": "turbo test",
+		"dev": "turbo dev",
+		"lint": "turbo lint",
+		"format": "prettier --write \"**/*.{ts,tsx,md,svelte}\""
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"@ianvs/prettier-plugin-sort-imports": "^4.3.1",
+		"prettier": "^3.2.5",
+		"prettier-plugin-svelte": "^3.2.6",
+		"prettier-plugin-tailwindcss": "^0.6.6",
+		"turbo": "^2.0.12",
+		"typescript": "^5.4.5"
+	},
+	"packageManager": "pnpm@9.7.0",
+	"engines": {
+		"node": ">=18"
+	}
 }

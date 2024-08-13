@@ -1,0 +1,27 @@
+{
+	"name": "scraper",
+	"module": "index.ts",
+	"type": "module",
+	"scripts": {
+		"test": "bun test --coverage"
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"@types/unist": "^3.0.2"
+	},
+	"peerDependencies": {
+		"typescript": "^5.0.0"
+	},
+	"dependencies": {
+		"@apollo/client": "^3.11.4",
+		"@git-skyline/github-graphql": "^0.0.5",
+		"db": "workspace:*",
+		"github-graphql": "workspace:*",
+		"graphql-request": "^7.1.0",
+		"mdast-util-from-markdown": "^2.0.1",
+		"pocketbase": "^0.21.4",
+		"types": "workspace:*",
+		"unist-util-visit": "^5.0.0",
+		"zod": "^3.23.8"
+	}
+}
