@@ -14,4 +14,7 @@
 pnpm build  # build all packages
 bun scripts/init-env-vars.ts
 pnpm --filter db gen  # generate database types
+pnpm scrape # scrape all awesome lists
 ```
+
+To add a GitHub awesome list repo, edit `packages/scraper/data/awesome-list.ts`.

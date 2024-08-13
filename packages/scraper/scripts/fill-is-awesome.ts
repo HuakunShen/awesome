@@ -58,7 +58,6 @@ const repoToId = allRepos.reduce(
 const allIsAwesomes = await isAwesomeDao.getAll()
 const allIsAwesomesSet = new Set<IsAwesomeResponse>()
 
-console.log("allIsAwesomesSet", allIsAwesomesSet)
 const candidates: Set<{ repoId: string; listId: string }> = new Set()
 Object.entries(listToRepos).forEach(async ([listUrl, repoUrls]) => {
 	const listId = awesomeListUrlToId[listUrl]

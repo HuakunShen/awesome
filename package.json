@@ -10,7 +10,7 @@
 		"lint": "turbo lint",
 		"format": "prettier --write \"**/*.{ts,tsx,md,svelte}\"",
 		"commit": "gitmoji -c",
-		"c": "npm run commit"
+		"scrape": "pnpm --filter scraper scrape"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",

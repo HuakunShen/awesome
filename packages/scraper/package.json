@@ -3,7 +3,8 @@
 	"module": "index.ts",
 	"type": "module",
 	"scripts": {
-		"test": "bun test --coverage"
+		"test": "bun test --coverage",
+		"scrape": "bun scrape.ts"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",
