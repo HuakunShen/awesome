@@ -1,4 +1,6 @@
+import fs from "fs"
 import { $ } from "bun"
+import prettyBytes from "pretty-bytes"
 import { getAdminPocketBaseClient } from "../src/client"
 
 if (!(Bun.env.PB_URL && Bun.env.PB_ADMIN_USERNAME && Bun.env.PB_ADMIN_PASSWORD)) {
@@ -18,6 +20,10 @@ const url = adminDBClient.backups.getDownloadUrl(token, "tmp.zip")
 const result = await fetch(url)
 const path = "./tmp.zip"
 await Bun.write(path, result)
+// get size of file
+const stats = fs.statSync(path)
+console.log("DB File size:", prettyBytes(stats.size))
+
 // delete backup
 await adminDBClient.backups.delete("tmp.zip")
 

@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "pocketbase": "^0.21.4",
+    "pretty-bytes": "^6.1.1",
     "zod": "^3.23.8"
   }
 }

@@ -1,15 +1,9 @@
-# scraper
-
-To install dependencies:
+To update database data, run the following commands:
 
 ```bash
-bun install
+# get latest repo data into database
+bun scripts/fill-repo-data.ts
+
+# fill the relationship between awesome list and the repos
+bun fill-is-awesome.ts
 ```
-
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.1.21. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.

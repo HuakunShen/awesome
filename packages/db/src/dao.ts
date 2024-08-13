@@ -1,8 +1,9 @@
-import PocketBase from "pocketbase"
 import type {
 	AwesomeListRecord,
 	AwesomeListResponse,
 	AwesomeListTypeOptions,
+	IsAwesomeRecord,
+	IsAwesomeResponse,
 	RepoRecord,
 	RepoResponse,
 	TypedPocketBase
@@ -17,7 +18,7 @@ export class AwesomeListDao {
 
 	/* --------------------------------- Create --------------------------------- */
 	insert(data: { name: string; url: string; type: AwesomeListTypeOptions; metadata: unknown }) {
-		return this.client.collection(this.tableName).create<AwesomeListRecord>({
+		return this.client.collection(this.tableName).create<AwesomeListResponse>({
 			url: data.url,
 			name: data.name,
 			type: data.type,
@@ -32,7 +33,7 @@ export class AwesomeListDao {
 
 	/* --------------------------------- Update --------------------------------- */
 	async update(id: string, name: string, url: string) {
-		return await this.client.collection(this.tableName).update<AwesomeListRecord>(id, {
+		return await this.client.collection(this.tableName).update<AwesomeListResponse>(id, {
 			name,
 			url
 		})
@@ -40,20 +41,20 @@ export class AwesomeListDao {
 
 	/* --------------------------------- Read --------------------------------- */
 	async get(id: string) {
-		return await this.client.collection(this.tableName).getOne<AwesomeListRecord>(id)
+		return await this.client.collection(this.tableName).getOne<AwesomeListResponse>(id)
 	}
 
-	async getByUrl(url: string): Promise<AwesomeListRecord | null> {
+	async getByUrl(url: string): Promise<AwesomeListResponse | null> {
 		return this.client
 			.collection(this.tableName)
-			.getFirstListItem<AwesomeListRecord>(`url="${url}"`)
+			.getFirstListItem<AwesomeListResponse>(`url="${url}"`)
 			.catch((err) => {
 				return null
 			})
 	}
 
 	async getAll() {
-		return await this.client.collection(this.tableName).getFullList<AwesomeListRecord>()
+		return this.client.collection(this.tableName).getFullList<AwesomeListResponse>()
 	}
 }
 
@@ -68,12 +69,13 @@ export class AwesomeRepoDao {
 	}
 
 	insert(data: RepoRecord) {
-		return this.client.collection(this.tableName).create<RepoRecord>({
+		return this.client.collection(this.tableName).create<RepoResponse>({
 			url: data.url,
 			name: data.name,
 			description: data.description,
 			stars: data.stars,
-			metadata: data.metadata
+			metadata: data.metadata,
+			missing: data.missing
 		})
 	}
 
@@ -88,25 +90,57 @@ export class AwesomeRepoDao {
 
 	getAllBasicRepos(): Promise<RepoResponse[]> {
 		return this.client.collection(this.tableName).getFullList({
-			fields: "url,name,updated,created,url"
+			fields: "url,name,updated,created,id"
 		})
 	}
 
 	update(id: string, data: RepoRecord) {
-		return this.client.collection(this.tableName).update<RepoRecord>(id, data)
+		return this.client.collection(this.tableName).update<RepoResponse>(id, data)
 	}
+
+	// setMissing(repoUrl: string) {
+	// 	return this.client.collection(this.tableName).update<RepoResponse>(repoUrl, { missing: true })
+	// }
 
 	async insertOrUpdate(data: RepoRecord) {
 		const rec = await this.getByUrl(data.url)
 		if (rec) {
-			const updateTimestamp = new Date(rec.updated)
-			// check if the repo has been updated in the last 24 hours
-			if (new Date().getTime() - updateTimestamp.getTime() < 24 * 60 * 60 * 1000) {
-				return null
-			}
 			return this.update(rec.id, data)
 		} else {
 			return this.insert(data)
 		}
+	}
+}
+export class IsAwesomeDao {
+	client: TypedPocketBase
+	tableName = "is_awesome"
+
+	constructor(client: TypedPocketBase) {
+		this.client = client
+	}
+
+	getAll() {
+		return this.client.collection(this.tableName).getFullList<IsAwesomeResponse>()
+	}
+
+	insert(data: IsAwesomeRecord) {
+		return this.client.collection(this.tableName).create<IsAwesomeResponse>(data)
+	}
+
+	async getByListAndRepo(listId: string, repoId: string) {
+		return this.client
+			.collection(this.tableName)
+			.getFirstListItem<IsAwesomeResponse>(`awesome_list="${listId}" AND repo="${repoId}"`)
+			.catch((err) => {
+				return null
+			})
+	}
+
+	async insertIfNotExist(data: Required<IsAwesomeRecord>) {
+		const rec = await this.getByListAndRepo(data.awesome_list, data.repo)
+		if (!rec) {
+			return this.insert(data)
+		}
+		return null
 	}
 }

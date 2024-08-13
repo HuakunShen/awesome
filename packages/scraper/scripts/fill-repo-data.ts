@@ -4,11 +4,21 @@ import {
 	AwesomeRepoDao,
 	getAdminPocketBaseClient
 } from "db"
-import { githubAwesomeList } from "./data/awesome-list"
-import { GitHubRepoUrlRegex, PB_ADMIN_PASSWORD, PB_ADMIN_USERNAME, PB_URL } from "./src/constant"
-import { parseMarkdownLinks, parseOwnerAndRepoFromGithubUrl } from "./src/parser"
-import { fetchGitHubRepoMetadata, fetchGitHubRepoReadme } from "./src/scraper"
-import { getGithubRepoUrl } from "./src/url"
+import { githubAwesomeList } from "../data/awesome-list"
+import { fetchGitHubApiRateLimit } from "../src/api"
+import {
+	CACHE_INVALIDATION_TIME,
+	DAY,
+	GitHubRepoUrlRegex,
+	PB_ADMIN_PASSWORD,
+	PB_ADMIN_USERNAME,
+	PB_URL
+} from "../src/constant"
+import { parseMarkdownLinks, parseOwnerAndRepoFromGithubUrl } from "../src/parser"
+import { fetchGitHubRepoMetadata, fetchGitHubRepoReadme } from "../src/scraper"
+import { getGithubRepoUrl } from "../src/url"
+
+const githubRateLimit = await fetchGitHubApiRateLimit()
 
 const adminDBClient = await getAdminPocketBaseClient(PB_URL, PB_ADMIN_USERNAME, PB_ADMIN_PASSWORD)
 const awesomeListDao = new AwesomeListDao(adminDBClient)
@@ -53,7 +63,7 @@ console.log(`Update GitHub Repo`)
 const allRepos = await awesomeRepoDao.getAllBasicRepos()
 const recentlyUpdatedRepos = allRepos.filter((repo) => {
 	const updatedTime = new Date(repo.updated)
-	return new Date().getTime() - updatedTime.getTime() < 24 * 60 * 60 * 1000
+	return new Date().getTime() - updatedTime.getTime() < CACHE_INVALIDATION_TIME
 })
 const originalCandidateSize = candidateRepos.size
 for (const repo of recentlyUpdatedRepos) {
@@ -61,12 +71,23 @@ for (const repo of recentlyUpdatedRepos) {
 }
 console.log(`Skipped ${originalCandidateSize - candidateRepos.size} recently updated repos`)
 
-for (const repoUrl of candidateRepos) {
-	const { owner, name: repoName } = parseOwnerAndRepoFromGithubUrl(repoUrl)
+let candidateReposArray = Array.from(candidateRepos)
+console.log("GitHub API Rate Limit:", githubRateLimit)
 
+if (githubRateLimit.remaining < candidateRepos.size) {
+	candidateReposArray = candidateReposArray.slice(0, githubRateLimit.remaining)
+	console.log(`Rate limit reached, only updating ${githubRateLimit.remaining} repos`)
+}
+for (const repoUrl of candidateReposArray) {
+	const { owner, name: repoName } = parseOwnerAndRepoFromGithubUrl(repoUrl)
 	const repoMetadata = await fetchGitHubRepoMetadata(owner, repoName)
 	if (!repoMetadata) {
 		console.warn(`Failed to fetch metadata for ${owner}/${repoName}`)
+		await awesomeRepoDao.insertOrUpdate({
+			missing: true,
+			name: repoName,
+			url: repoUrl
+		})
 		continue
 	}
 	await awesomeRepoDao.insertOrUpdate({

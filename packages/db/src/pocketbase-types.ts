@@ -7,6 +7,7 @@ import type { RecordService } from "pocketbase"
 
 export enum Collections {
 	AwesomeList = "awesome_list",
+	IsAwesome = "is_awesome",
 	Repo = "repo",
 	Users = "users"
 }
@@ -45,9 +46,15 @@ export type AwesomeListRecord<Tmetadata = unknown> = {
 	url: string
 }
 
+export type IsAwesomeRecord = {
+	awesome_list?: RecordIdString
+	repo?: RecordIdString
+}
+
 export type RepoRecord<Tmetadata = unknown> = {
-	description: string
-	metadata: null | Tmetadata
+	description?: string
+	metadata?: null | Tmetadata
+	missing?: boolean
 	name: string
 	stars?: number
 	url: string
@@ -63,6 +70,8 @@ export type AwesomeListResponse<Tmetadata = unknown, Texpand = unknown> = Requir
 	AwesomeListRecord<Tmetadata>
 > &
 	BaseSystemFields<Texpand>
+export type IsAwesomeResponse<Texpand = unknown> = Required<IsAwesomeRecord> &
+	BaseSystemFields<Texpand>
 export type RepoResponse<Tmetadata = unknown, Texpand = unknown> = Required<RepoRecord<Tmetadata>> &
 	BaseSystemFields<Texpand>
 export type UsersResponse<Texpand = unknown> = Required<UsersRecord> & AuthSystemFields<Texpand>
@@ -71,12 +80,14 @@ export type UsersResponse<Texpand = unknown> = Required<UsersRecord> & AuthSyste
 
 export type CollectionRecords = {
 	awesome_list: AwesomeListRecord
+	is_awesome: IsAwesomeRecord
 	repo: RepoRecord
 	users: UsersRecord
 }
 
 export type CollectionResponses = {
 	awesome_list: AwesomeListResponse
+	is_awesome: IsAwesomeResponse
 	repo: RepoResponse
 	users: UsersResponse
 }
@@ -86,6 +97,7 @@ export type CollectionResponses = {
 
 export type TypedPocketBase = PocketBase & {
 	collection(idOrName: "awesome_list"): RecordService<AwesomeListResponse>
+	collection(idOrName: "is_awesome"): RecordService<IsAwesomeResponse>
 	collection(idOrName: "repo"): RecordService<RepoResponse>
 	collection(idOrName: "users"): RecordService<UsersResponse>
 }

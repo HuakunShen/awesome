@@ -8,7 +8,9 @@
 		"test": "turbo test",
 		"dev": "turbo dev",
 		"lint": "turbo lint",
-		"format": "prettier --write \"**/*.{ts,tsx,md,svelte}\""
+		"format": "prettier --write \"**/*.{ts,tsx,md,svelte}\"",
+		"commit": "gitmoji -c",
+		"c": "npm run commit"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",
