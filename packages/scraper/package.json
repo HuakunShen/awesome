@@ -28,6 +28,7 @@
 		"mdast-util-from-markdown": "^2.0.1",
 		"pocketbase": "^0.21.4",
 		"pretty-ms": "^9.1.0",
+		"react": "^18.3.1",
 		"types": "workspace:*",
 		"unist-util-visit": "^5.0.0",
 		"zod": "^3.23.8"

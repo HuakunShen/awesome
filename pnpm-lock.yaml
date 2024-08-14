@@ -148,10 +148,10 @@ importers:
     dependencies:
       '@apollo/client':
         specifier: ^3.11.4
-        version: 3.11.4(graphql-ws@5.16.0(graphql@16.9.0))(graphql@16.9.0)
+        version: 3.11.4(graphql-ws@5.16.0(graphql@16.9.0))(graphql@16.9.0)(react@18.3.1)
       '@git-skyline/github-graphql':
         specifier: ^0.0.5
-        version: 0.0.5(graphql-ws@5.16.0(graphql@16.9.0))(typescript@5.5.4)
+        version: 0.0.5(graphql-ws@5.16.0(graphql@16.9.0))(react@18.3.1)(typescript@5.5.4)
       chalk:
         specifier: ^5.3.0
         version: 5.3.0
@@ -179,6 +179,9 @@ importers:
       pretty-ms:
         specifier: ^9.1.0
         version: 9.1.0
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
       types:
         specifier: workspace:*
         version: link:../types
@@ -3470,6 +3473,10 @@ packages:
   react-is@16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
 
+  react@18.3.1:
+    resolution: {integrity: sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==}
+    engines: {node: '>=0.10.0'}
+
   read-cache@1.0.0:
     resolution: {integrity: sha512-Owdv/Ft7IjOgm/i0xvNDZ1LrRANRfew4b2prF3OWMQLxLfu3bS8FVhCsrSCMK4lR56Y9ya+AThoTpDCTxCmpRA==}
 
@@ -4327,7 +4334,7 @@ snapshots:
       '@jridgewell/gen-mapping': 0.3.5
       '@jridgewell/trace-mapping': 0.3.25
 
-  '@apollo/client@3.11.4(graphql-ws@5.16.0(graphql@16.9.0))(graphql@16.9.0)':
+  '@apollo/client@3.11.4(graphql-ws@5.16.0(graphql@16.9.0))(graphql@16.9.0)(react@18.3.1)':
     dependencies:
       '@graphql-typed-document-node/core': 3.2.0(graphql@16.9.0)
       '@wry/caches': 1.0.1
@@ -4338,7 +4345,7 @@ snapshots:
       hoist-non-react-statics: 3.3.2
       optimism: 0.18.0
       prop-types: 15.8.1
-      rehackt: 0.1.0
+      rehackt: 0.1.0(react@18.3.1)
       response-iterator: 0.2.6
       symbol-observable: 4.0.0
       ts-invariant: 0.10.3
@@ -4346,6 +4353,7 @@ snapshots:
       zen-observable-ts: 1.2.5
     optionalDependencies:
       graphql-ws: 5.16.0(graphql@16.9.0)
+      react: 18.3.1
     transitivePeerDependencies:
       - '@types/react'
 
@@ -4994,9 +5002,9 @@ snapshots:
       esbuild-runner: 2.2.2(esbuild@0.23.0)
     optional: true
 
-  '@git-skyline/github-graphql@0.0.5(graphql-ws@5.16.0(graphql@16.9.0))(typescript@5.5.4)':
+  '@git-skyline/github-graphql@0.0.5(graphql-ws@5.16.0(graphql@16.9.0))(react@18.3.1)(typescript@5.5.4)':
     dependencies:
-      '@apollo/client': 3.11.4(graphql-ws@5.16.0(graphql@16.9.0))(graphql@16.9.0)
+      '@apollo/client': 3.11.4(graphql-ws@5.16.0(graphql@16.9.0))(graphql@16.9.0)(react@18.3.1)
       graphql: 16.9.0
       typescript: 5.5.4
     transitivePeerDependencies:
@@ -7924,6 +7932,10 @@ snapshots:
 
   react-is@16.13.1: {}
 
+  react@18.3.1:
+    dependencies:
+      loose-envify: 1.4.0
+
   read-cache@1.0.0:
     dependencies:
       pify: 2.3.0
@@ -7942,7 +7954,9 @@ snapshots:
 
   regenerator-runtime@0.14.1: {}
 
-  rehackt@0.1.0: {}
+  rehackt@0.1.0(react@18.3.1):
+    optionalDependencies:
+      react: 18.3.1
 
   relay-runtime@12.0.0:
     dependencies:
