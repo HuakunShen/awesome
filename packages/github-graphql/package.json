@@ -20,6 +20,7 @@
 		"typescript": "^5.0.0"
 	},
 	"dependencies": {
+		"@graphql-typed-document-node/core": "^3.2.0",
 		"graphql": "^16.9.0",
 		"graphql-request": "^7.1.0",
 		"graphql-tag": "^2.12.6"

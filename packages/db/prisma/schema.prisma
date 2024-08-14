@@ -1,0 +1,69 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+type License {
+  key      String
+  name     String
+  nickname String?
+}
+
+model CandidateRepo {
+  id  String @id @default(auto()) @map("_id") @db.ObjectId
+  url String @unique
+}
+
+model Repo {
+  id                     String       @id @default(auto()) @map("_id") @db.ObjectId
+  owner                  String
+  name                   String
+  stars                  Int          @default(-1)
+  url                    String       @unique
+  updatedAt              DateTime     @updatedAt
+  createdAt              DateTime     @default(now())
+  missing                Boolean      @default(false)
+  // Repo Metadata
+  description            String?
+  diskUsage              Int?
+  forkCount              Int          @default(-1)
+  hasDiscussionsEnabled  Boolean      @default(false)
+  hasIssuesEnabled       Boolean      @default(false)
+  hasSponsorshipsEnabled Boolean      @default(false)
+  homepageUrl            String?
+  licenseInfo            License?
+  openIssuesCount        Int          @default(-1)
+  pullRequestsCount      Int          @default(-1)
+  releasesCount          Int          @default(-1)
+  repoPushedAt           DateTime     @default("1970-01-01T00:00:00Z")
+  repoUpdatedAt          DateTime     @default("1970-01-01T00:00:00Z")
+  repoCreatedAt          DateTime     @default("1970-01-01T00:00:00Z")
+  watchersCount          Int          @default(-1)
+  AwesomeList            AwesomeList? @relation(fields: [awesomeListId], references: [id])
+  awesomeListId          String?      @db.ObjectId
+}
+
+enum AwesomeListType {
+  GitHub
+}
+
+model AwesomeList {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  url             String   @unique
+  tags            String[]
+  githubRepos     Repo[]
+  lastRefreshTime DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now())
+}
