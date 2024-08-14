@@ -26,10 +26,11 @@
 	"type": "module",
 	"dependencies": {
 		"@kksh/svelte": "^0.1.4",
+		"@prisma/client": "^5.18.0",
 		"bits-ui": "^0.21.13",
 		"clsx": "^2.1.1",
+		"db": "workspace:*",
 		"tailwind-merge": "^2.5.2",
-		"tailwind-variants": "^0.2.1",
-		"db": "workspace:*"
+		"tailwind-variants": "^0.2.1"
 	}
 }

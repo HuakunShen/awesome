@@ -13,12 +13,12 @@
 		"scrape": "pnpm --filter scraper scrape"
 	},
 	"devDependencies": {
-		"@types/bun": "latest",
 		"@ianvs/prettier-plugin-sort-imports": "^4.3.1",
+		"@types/bun": "latest",
 		"prettier": "^3.2.5",
 		"prettier-plugin-svelte": "^3.2.6",
 		"prettier-plugin-tailwindcss": "^0.6.6",
-		"turbo": "^2.0.12",
+		"turbo": "^2.0.13",
 		"typescript": "^5.4.5"
 	},
 	"packageManager": "pnpm@9.7.0",
