@@ -1,33 +1,21 @@
-import { githubAwesomeList } from "@/../data/awesome-list"
 import { fetchGitHubApiRateLimit } from "@/api"
 import {
 	CACHE_INVALIDATION_TIME,
-	DAY_MS,
-	GitHubRepoUrlRegex,
+	MINUTE_MS,
 	PB_ADMIN_PASSWORD,
 	PB_ADMIN_USERNAME,
 	PB_URL
 } from "@/constant"
-import {
-	constructGitHubRepoUrl,
-	parseMarkdownLinks,
-	parseOwnerAndRepoFromGithubUrl
-} from "@/parser"
-import { fetchGitHubRepoMetadata, fetchGitHubRepoReadme, indexGitHubRepo } from "@/scraper"
-import { getGithubRepoUrl } from "@/url"
-import chalk from "chalk"
+import { parseOwnerAndRepoFromGithubUrl } from "@/parser"
+import { batchIndexGitHubReposWithBatchSize, indexGitHubRepo } from "@/scraper"
 import cliProgress from "cli-progress"
-import {
-	AwesomeListDao,
-	AwesomeListTypeOptions,
-	AwesomeRepoDao,
-	getAdminPocketBaseClient
-} from "db"
+import { AwesomeListDao, AwesomeRepoDao, getAdminPocketBaseClient } from "db"
+import type { Repo } from "types"
 
 /**
  * Refresh outdated repo data for repos in DB
  */
-export async function refreshOutDatedRepoData() {
+export async function refreshOutDatedRepoData(options: { batch?: boolean } = {}) {
 	const githubRateLimit = await fetchGitHubApiRateLimit()
 	const adminDBClient = await getAdminPocketBaseClient(PB_URL, PB_ADMIN_USERNAME, PB_ADMIN_PASSWORD)
 	const awesomeListDao = new AwesomeListDao(adminDBClient)
@@ -38,16 +26,25 @@ export async function refreshOutDatedRepoData() {
 	console.log(
 		`Draft repos: ${originalLength}; remaining rate limit: ${githubRateLimit.remaining}; Will index ${outdatedRepos.length} repos`
 	)
-	const pbar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
-	pbar.start(outdatedRepos.length, 0)
-	for (const repo of outdatedRepos) {
-		pbar.increment()
-		await indexGitHubRepo(repo.url, awesomeRepoDao)
+	if (options.batch) {
+		const repos: Repo[] = outdatedRepos
+			.map((x) => x.url)
+			.map(parseOwnerAndRepoFromGithubUrl)
+			.filter((x) => x !== null)
+		const batchSize = 20
+		await batchIndexGitHubReposWithBatchSize(repos, awesomeRepoDao, batchSize)
+	} else {
+		const pbar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
+		pbar.start(outdatedRepos.length, 0)
+		for (const repo of outdatedRepos) {
+			pbar.increment()
+			await indexGitHubRepo(repo.url, awesomeRepoDao)
+		}
+		pbar.stop()
 	}
-	pbar.stop()
 }
 
-export async function refreshDraftRepoData() {
+export async function refreshDraftRepoData(options: { batch?: boolean } = {}) {
 	const githubRateLimit = await fetchGitHubApiRateLimit()
 	const adminDBClient = await getAdminPocketBaseClient(PB_URL, PB_ADMIN_USERNAME, PB_ADMIN_PASSWORD)
 	const awesomeListDao = new AwesomeListDao(adminDBClient)
@@ -55,14 +52,27 @@ export async function refreshDraftRepoData() {
 	let draftRepos = await awesomeRepoDao.getDraftRepos({ extraFields: ["draft"] })
 	const originalLength = draftRepos.length
 	draftRepos = draftRepos.slice(0, githubRateLimit.remaining)
-	console.log(
-		`Draft repos: ${originalLength}; remaining rate limit: ${githubRateLimit.remaining}; Will index ${draftRepos.length} repos`
-	)
-	const pbar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
-	pbar.start(draftRepos.length, 0)
-	for (const repo of draftRepos) {
-		pbar.increment()
-		await indexGitHubRepo(repo.url, awesomeRepoDao)
+	const batchSize = 20
+	console.log(`Draft repos: ${originalLength}; remaining rate limit: ${githubRateLimit.remaining};`)
+
+	// batch indexing could result in batch error when a repo is not found, cannot use in the draft stage
+	// can be used in refreshing outdated repos (but also need to be careful of deleted/moved repos)
+	if (options.batch) {
+		console.log(`Will index at most ${githubRateLimit.remaining * batchSize} repos`)
+
+		const repos: Repo[] = draftRepos
+			.map((x) => x.url)
+			.map(parseOwnerAndRepoFromGithubUrl)
+			.filter((x) => x !== null)
+		await batchIndexGitHubReposWithBatchSize(repos, awesomeRepoDao, batchSize)
+	} else {
+		console.log(`Will index ${draftRepos.length} repos`)
+		const pbar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
+		pbar.start(draftRepos.length, 0)
+		for (const repo of draftRepos) {
+			pbar.increment()
+			await indexGitHubRepo(repo.url, awesomeRepoDao)
+		}
+		pbar.stop()
 	}
-	pbar.stop()
 }

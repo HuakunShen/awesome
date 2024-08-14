@@ -28,7 +28,7 @@ const githubRateLimit = await fetchGitHubApiRateLimit()
 const adminDBClient = await getAdminPocketBaseClient(PB_URL, PB_ADMIN_USERNAME, PB_ADMIN_PASSWORD)
 const awesomeListDao = new AwesomeListDao(adminDBClient)
 const awesomeRepoDao = new AwesomeRepoDao(adminDBClient, awesomeListDao)
-let allLists = await awesomeListDao.getAll()
+let allLists = await awesomeListDao.getAll({})
 
 console.log(chalk.blue(`Update Awesome List`))
 const pbar1 = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
@@ -48,7 +48,7 @@ for (const repo of githubAwesomeList) {
 }
 pbar1.stop()
 
-allLists = await awesomeListDao.getAll()
+allLists = await awesomeListDao.getAll({})
 
 console.log(chalk.blue(`Parse Links From Awesome List Repo Readme`))
 const pbar2 = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)

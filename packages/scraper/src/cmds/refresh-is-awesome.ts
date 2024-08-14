@@ -13,7 +13,7 @@ import {
 	parseMarkdownLinks,
 	parseOwnerAndRepoFromGithubUrl
 } from "@/parser"
-import { fetchGitHubRepoMetadata, fetchGitHubRepoReadme, indexGitHubRepo } from "@/scraper"
+import { fetchGitHubRepoReadme } from "@/scraper"
 import { getGithubRepoUrl } from "@/url"
 import chalk from "chalk"
 import cliProgress from "cli-progress"
@@ -36,7 +36,7 @@ export async function refreshIsAwesome() {
 	const awesomeRepoDao = new AwesomeRepoDao(adminDBClient, awesomeListDao)
 	const isAwesomeDao = new IsAwesomeDao(adminDBClient)
 
-	const allLists = await awesomeListDao.getAll()
+	const allLists = await awesomeListDao.getAll({})
 	// map each awesome list repo URL to a set of awesome repos
 	const listToRepos: Record<string, Set<string>> = {}
 
@@ -81,7 +81,7 @@ export async function refreshIsAwesome() {
 		{} as Record<string, string>
 	)
 
-	const allIsAwesomes = await isAwesomeDao.getAll()
+	const allIsAwesomes = await isAwesomeDao.getAll({})
 
 	// candidates is a set of repo and list IDs that are not in the isAwesome table
 	const candidates: Set<{ repoId: string; listId: string }> = new Set()

@@ -1,9 +1,12 @@
+import cliProgress from "cli-progress"
 import type { AwesomeRepoDao } from "db"
 import { githubGraphql } from "github-graphql"
 import { getSdk, type RepositoryQuery } from "github-graphql/req"
 import { GraphQLClient } from "graphql-request"
-import { getGitHubGraphqlSdk } from "./api"
+import type { Repo, RepoMetadata } from "types"
+import { getGitHubGraphqlSdk, getGitHubRepoMetadataInBatch } from "./api"
 import { GITHUB_TOKEN, PB_URL } from "./constant"
+import { logger } from "./logger"
 import { parseOwnerAndRepoFromGithubUrl } from "./parser"
 import { getGithubRepoMetadataUrl, getGithubRepoToReadmeUrl } from "./url"
 
@@ -106,4 +109,70 @@ export async function indexGitHubRepo(githubRepoUrl: string, awesomeRepoDao: Awe
 		url: githubRepoUrl,
 		draft: false
 	})
+}
+
+/**
+ * Batch index github repos, don't pass in hundreds of repos at once,
+ * this function sends a single graphql to get metadata of all repos.
+ * Use `batchIndexGitHubReposWithBatchSize()` if you have a lot of repos to index
+ * !Watch out of Non-Existing Repo, it will fail the entire batch GraphQL query, only use this function on existing repos
+ * @param githubRepoUrls
+ * @param awesomeRepoDao
+ */
+export async function batchIndexGitHubRepos(repos: Repo[], awesomeRepoDao: AwesomeRepoDao) {
+	let reposMetadata: RepoMetadata[] = []
+	try {
+		reposMetadata = await getGitHubRepoMetadataInBatch(repos)
+	} catch (error) {
+		console.log(error)
+		return
+	}
+	for (const [idx, repoMetadata] of reposMetadata.entries()) {
+		if (!repoMetadata) {
+			const repo = repos[idx] // repos and reposMetadata should have the same order
+			const repoUrl = getGithubRepoMetadataUrl(repo.owner, repo.name)
+			console.warn(`Failed to fetch metadata for ${repoUrl}`)
+			await awesomeRepoDao.insertOrUpdate({
+				missing: true,
+				name: repo.name,
+				url: repoUrl,
+				draft: false
+			})
+		}
+		await awesomeRepoDao.insertOrUpdate({
+			description: repoMetadata?.description ?? "",
+			metadata: repoMetadata,
+			name: repoMetadata.name,
+			stars: repoMetadata?.stargazerCount,
+			url: repoMetadata.url,
+			draft: false
+		})
+	}
+}
+
+/**
+ * !Watch out of Non-Existing Repo, it will fail the entire batch GraphQL query, only use this function on existing repos
+ * @param repos
+ * @param awesomeRepoDao
+ * @param batchSize
+ */
+export async function batchIndexGitHubReposWithBatchSize(
+	repos: Repo[],
+	awesomeRepoDao: AwesomeRepoDao,
+	batchSize = 10
+) {
+	const batches = []
+	for (let i = 0; i < repos.length; i += batchSize) {
+		batches.push(repos.slice(i, i + batchSize))
+	}
+	logger.info(
+		`Batch indexing ${repos.length} repos in ${batches.length} batches with size ${batchSize}`
+	)
+	const pbar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
+	pbar.start(batches.length, 0)
+	for (const batch of batches) {
+		pbar.increment()
+		await batchIndexGitHubRepos(batch, awesomeRepoDao)
+	}
+	pbar.stop()
 }

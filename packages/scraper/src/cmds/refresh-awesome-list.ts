@@ -14,7 +14,7 @@ import {
 	parseMarkdownLinks,
 	parseOwnerAndRepoFromGithubUrl
 } from "@/parser"
-import { fetchGitHubRepoMetadata, fetchGitHubRepoReadme, indexGitHubRepo } from "@/scraper"
+import { fetchGitHubRepoReadme } from "@/scraper"
 import { getGithubRepoUrl } from "@/url"
 import { isOutDated } from "@/utils"
 import chalk from "chalk"

@@ -11,7 +11,7 @@ export const RepoMetadata = z.object({
 	stargazerCount: z.number(),
 	forkCount: z.number(),
 	createdAt: z.string(),
-	description: z.string(),
+	description: z.string().nullable(),
 	hasDiscussionsEnabled: z.boolean(),
 	hasIssuesEnabled: z.boolean(),
 	forkingAllowed: z.boolean(),
@@ -31,9 +31,9 @@ export const RepoMetadata = z.object({
 	licenseInfo: z
 		.object({
 			__typename: z.string(),
-			key: z.string(),
-			name: z.string(),
-			nickname: z.null()
+			key: z.string().nullable(),
+			name: z.string().nullable(),
+			nickname: z.string().nullable()
 		})
 		.nullable()
 })

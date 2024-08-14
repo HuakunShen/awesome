@@ -1,0 +1,10 @@
+name = "awesome-repos-web"
+account_id = "741b020e5dd2db3e41f040f973d614a8"
+
+main = "./.cloudflare/worker.js"
+site.bucket = "./.cloudflare/public"
+
+build.command = "npm run build"
+
+compatibility_date = "2021-11-12"
+workers_dev = true
