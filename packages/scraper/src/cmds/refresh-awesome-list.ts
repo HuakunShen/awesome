@@ -1,5 +1,5 @@
 import { githubAwesomeList } from "@/../data/awesome-list"
-import { fetchGitHubApiRateLimit } from "@/api"
+import { fetchGitHubApiRateLimit, getGitHubRepoMetadataInBatch } from "@/api"
 import {
 	CACHE_INVALIDATION_TIME,
 	DAY_MS,
@@ -25,6 +25,7 @@ import {
 	AwesomeRepoDao,
 	getAdminPocketBaseClient
 } from "db"
+import type { Repo, RepoMetadata } from "types"
 
 const adminDBClient = await getAdminPocketBaseClient(PB_URL, PB_ADMIN_USERNAME, PB_ADMIN_PASSWORD)
 const awesomeListDao = new AwesomeListDao(adminDBClient)
@@ -36,21 +37,31 @@ const awesomeRepoDao = new AwesomeRepoDao(adminDBClient, awesomeListDao)
 export async function refreshNewAwesomeList() {
 	logger.info(`Refresh Awesome List: Add new Awesome List and Draft Repos`)
 	let allLists = await awesomeListDao.getAll({})
-
+	const existingListUrls = allLists.map((list) => list.url)
+	const reposNotInDb = githubAwesomeList.filter(
+		(repo) => !existingListUrls.includes(getGithubRepoUrl(repo.owner, repo.name))
+	)
+	if (reposNotInDb.length === 0) {
+		logger.info("No new awesome list to add")
+		return
+	}
+	const reposDataArr = await getGitHubRepoMetadataInBatch(reposNotInDb)
+	const urlToRepoMetadataMap = reposDataArr.reduce(
+		(acc, repo2) => {
+			acc[repo2.url] = repo2
+			return acc
+		},
+		{} as Record<string, RepoMetadata>
+	)
 	const pbar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
-	pbar.start(githubAwesomeList.length, 0)
-
-	for (const repo of githubAwesomeList) {
+	pbar.start(Object.keys(urlToRepoMetadataMap).length, 0)
+	for (const [repoUrl, repoMetadata] of Object.entries(urlToRepoMetadataMap)) {
 		pbar.increment()
-		const existingListUrls = allLists.map((list) => list.url)
-		if (existingListUrls.includes(getGithubRepoUrl(repo.owner, repo.name))) {
-			continue
-		}
-		await awesomeListDao.insert({
-			url: getGithubRepoUrl(repo.owner, repo.name),
-			name: repo.name,
+		await awesomeListDao.insertOrUpdate({
+			url: repoUrl,
+			name: repoMetadata.name,
 			type: AwesomeListTypeOptions.github,
-			metadata: await fetchGitHubRepoMetadata(repo.owner, repo.name)
+			metadata: repoMetadata
 		})
 	}
 	pbar.stop()

@@ -15,7 +15,7 @@ const adminDBClient = await getAdminPocketBaseClient(PB_URL, PB_ADMIN_USERNAME, 
 const awesomeListDao = new AwesomeListDao(adminDBClient)
 const awesomeRepoDao = new AwesomeRepoDao(adminDBClient, awesomeListDao)
 
-const awesomeRepos = await findAwesomeRepos(awesomeRepoDao, 5000)
+const awesomeRepos = await findAwesomeRepos(awesomeRepoDao, 5000, 10)
 Bun.write(
 	"./awesome-repos.json",
 	JSON.stringify(
@@ -24,6 +24,8 @@ Bun.write(
 		2
 	)
 )
-// Bun.write("./awesome-repos.json", JSON.stringify(awesomeRepos, null, 2))
-console.log(awesomeRepos)
+Bun.write("./awesome-repos.json", JSON.stringify(awesomeRepos, null, 2))
+// console.log(awesomeRepos)
+console.log(awesomeRepos.map((r) => r.url))
+
 console.log(awesomeRepos.length)

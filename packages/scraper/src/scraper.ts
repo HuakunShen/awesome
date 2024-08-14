@@ -20,6 +20,7 @@ export async function fetchGitHubRepoReadme(owner: string, repo: string): Promis
 	// 	console.log(readmeRes.data.repository?.object)
 	// 	return ""
 	// }
+	// !object(expression: "HEAD:README.md") { in GitHub Gql Query doesn't seem to work for some repos, got null
 	const rawRes = await fetch(getGithubRepoToReadmeUrl(owner, repo), {
 		headers: {
 			authorization: `Bearer ${process.env.GITHUB_TOKEN}`,

@@ -40,13 +40,22 @@ export class AwesomeListDao extends BaseDao<AwesomeListResponse> {
 	}
 
 	/* --------------------------------- Create --------------------------------- */
-	insert(data: { name: string; url: string; type: AwesomeListTypeOptions; metadata: unknown }) {
+	insert(data: AwesomeListRecord) {
 		return this.collection.create({
 			url: data.url,
 			name: data.name,
-			type: data.type,
+			type: data,
 			metadata: data.metadata
 		})
+	}
+
+	async insertOrUpdate(data: AwesomeListRecord) {
+		const rec = await this.getByUrl(data.url)
+		if (rec) {
+			return this.update(rec.id, data)
+		} else {
+			return this.insert(data)
+		}
 	}
 
 	/* --------------------------------- Delete --------------------------------- */
@@ -55,11 +64,8 @@ export class AwesomeListDao extends BaseDao<AwesomeListResponse> {
 	}
 
 	/* --------------------------------- Update --------------------------------- */
-	update(id: string, name: string, url: string) {
-		return this.collection.update(id, {
-			name,
-			url
-		})
+	update(id: string, data: AwesomeListRecord) {
+		return this.collection.update(id, data)
 	}
 
 	async setLastRefreshed(id: string) {
