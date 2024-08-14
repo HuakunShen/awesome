@@ -1,34 +1,42 @@
+import { githubAwesomeList } from "@/../data/awesome-list"
+import { fetchGitHubApiRateLimit } from "@/api"
+import {
+	CACHE_INVALIDATION_TIME,
+	DAY_MS,
+	GitHubRepoUrlRegex,
+	PB_ADMIN_PASSWORD,
+	PB_ADMIN_USERNAME,
+	PB_URL
+} from "@/constant"
+import {
+	constructGitHubRepoUrl,
+	parseMarkdownLinks,
+	parseOwnerAndRepoFromGithubUrl
+} from "@/parser"
+import { fetchGitHubRepoMetadata, fetchGitHubRepoReadme, indexGitHubRepo } from "@/scraper"
+import { getGithubRepoUrl } from "@/url"
+import chalk from "chalk"
+import cliProgress from "cli-progress"
 import {
 	AwesomeListDao,
 	AwesomeListTypeOptions,
 	AwesomeRepoDao,
 	getAdminPocketBaseClient
 } from "db"
-import { githubAwesomeList } from "../data/awesome-list"
-import { fetchGitHubApiRateLimit } from "../src/api"
-import {
-	CACHE_INVALIDATION_TIME,
-	DAY,
-	GitHubRepoUrlRegex,
-	PB_ADMIN_PASSWORD,
-	PB_ADMIN_USERNAME,
-	PB_URL
-} from "../src/constant"
-import { parseMarkdownLinks, parseOwnerAndRepoFromGithubUrl } from "../src/parser"
-import { fetchGitHubRepoMetadata, fetchGitHubRepoReadme } from "../src/scraper"
-import { getGithubRepoUrl } from "../src/url"
 
 const githubRateLimit = await fetchGitHubApiRateLimit()
-
 const adminDBClient = await getAdminPocketBaseClient(PB_URL, PB_ADMIN_USERNAME, PB_ADMIN_PASSWORD)
 const awesomeListDao = new AwesomeListDao(adminDBClient)
 const awesomeRepoDao = new AwesomeRepoDao(adminDBClient, awesomeListDao)
 let allLists = await awesomeListDao.getAll()
 
+console.log(chalk.blue(`Update Awesome List`))
+const pbar1 = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
+pbar1.start(githubAwesomeList.length, 0)
 for (const repo of githubAwesomeList) {
+	pbar1.increment()
 	const existingListUrls = allLists.map((list) => list.url)
 	if (existingListUrls.includes(getGithubRepoUrl(repo.owner, repo.name))) {
-		console.log(`Skipping ${repo.name} because it already exists`)
 		continue
 	}
 	const ret = await awesomeListDao.insert({
@@ -38,29 +46,38 @@ for (const repo of githubAwesomeList) {
 		metadata: await fetchGitHubRepoMetadata(repo.owner, repo.name)
 	})
 }
+pbar1.stop()
+
 allLists = await awesomeListDao.getAll()
 
-// function updateRepo(owner: string, repoName: string) {
-// 	await fetchGitHubRepoMetadata(repo.owner, repo.name)
-// }
-
+console.log(chalk.blue(`Parse Links From Awesome List Repo Readme`))
+const pbar2 = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
+pbar2.start(allLists.length, 0)
 const candidateRepos = new Set<string>()
 for (const list of allLists) {
+	pbar2.increment()
 	if (list.type === AwesomeListTypeOptions.github) {
-		const { owner, name: repoName } = parseOwnerAndRepoFromGithubUrl(list.url)
+		const parse = parseOwnerAndRepoFromGithubUrl(list.url)
+		if (!parse) {
+			continue
+		}
+		const { owner, name: repoName } = parse
 		const awesomeReadme = await fetchGitHubRepoReadme(owner, repoName)
 		const markdownLinks = parseMarkdownLinks(awesomeReadme)
 		// filter out non-github-repo links with regex
 		const githubRepos = markdownLinks.filter((link) => link.url.match(GitHubRepoUrlRegex))
 		for (const repo of githubRepos) {
-			candidateRepos.add(repo.url)
+			const parse = parseOwnerAndRepoFromGithubUrl(repo.url)
+			if (!parse) {
+				continue
+			}
+			const { owner, name: repoName } = parse
+			candidateRepos.add(constructGitHubRepoUrl(owner, repoName))
 		}
 	}
 }
-
-let progress = 0
-console.log(`Update GitHub Repo`)
-const allRepos = await awesomeRepoDao.getAllBasicRepos()
+pbar2.stop()
+const allRepos = await awesomeRepoDao.getAll({})
 const recentlyUpdatedRepos = allRepos.filter((repo) => {
 	const updatedTime = new Date(repo.updated)
 	return new Date().getTime() - updatedTime.getTime() < CACHE_INVALIDATION_TIME
@@ -72,34 +89,25 @@ for (const repo of recentlyUpdatedRepos) {
 console.log(`Skipped ${originalCandidateSize - candidateRepos.size} recently updated repos`)
 
 let candidateReposArray = Array.from(candidateRepos)
-console.log("GitHub API Rate Limit:", githubRateLimit)
+console.log(chalk.blue("GitHub API Rate Limit:"), githubRateLimit)
 
 if (githubRateLimit.remaining < candidateRepos.size) {
 	candidateReposArray = candidateReposArray.slice(0, githubRateLimit.remaining)
 	console.log(`Rate limit reached, only updating ${githubRateLimit.remaining} repos`)
 }
+// process.stdout.write
+const pbar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
+pbar.start(candidateReposArray.length, 0)
 for (const repoUrl of candidateReposArray) {
-	const { owner, name: repoName } = parseOwnerAndRepoFromGithubUrl(repoUrl)
-	const repoMetadata = await fetchGitHubRepoMetadata(owner, repoName)
-	if (!repoMetadata) {
-		console.warn(`Failed to fetch metadata for ${owner}/${repoName}`)
-		await awesomeRepoDao.insertOrUpdate({
-			missing: true,
-			name: repoName,
-			url: repoUrl
-		})
+	const parse = parseOwnerAndRepoFromGithubUrl(repoUrl)
+	if (!parse) {
 		continue
 	}
-	await awesomeRepoDao.insertOrUpdate({
-		description: repoMetadata?.description ?? "",
-		metadata: repoMetadata,
-		name: repoName,
-		stars: repoMetadata?.stargazerCount,
-		url: repoUrl
-	})
-
-	process.stdout.write(
-		`${progress} / ${candidateRepos.size} (${owner}/${repoName}) ${" ".repeat(20)}\r`
-	)
-	progress++
+	const { owner, name: repoName } = parse
+	await indexGitHubRepo(repoUrl, awesomeRepoDao)
+	// process.stdout.write(
+	// 	`${progress} / ${candidateReposArray.length} (${owner}/${repoName}) ${" ".repeat(20)}\r`
+	// )
+	pbar.increment()
 }
+pbar.stop()

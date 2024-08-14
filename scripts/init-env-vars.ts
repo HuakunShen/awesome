@@ -18,7 +18,13 @@ GITHUB_TOKEN	=${process.env.GITHUB_TOKEN}
 	)
 }
 
-const targetPkgPaths = ["apps/web", "packages/scraper", "packages/github-graphql", "packages/db"]
+const targetPkgPaths = [
+	"apps/web",
+	"packages/scraper",
+	"packages/github-graphql",
+	"packages/db",
+	"apps/dashboard"
+]
 const rootEnv = Bun.file(".env")
 for (const targetPkgPath of targetPkgPaths) {
 	Bun.write(path.join(repoRoot, targetPkgPath, ".env"), await rootEnv.text())

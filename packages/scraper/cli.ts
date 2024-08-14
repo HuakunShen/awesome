@@ -1,0 +1,51 @@
+#!/usr/bin/env node
+import {
+	refreshAwesomeListRepos,
+	refreshDraftRepoData,
+	refreshIsAwesome,
+	refreshNewAwesomeList,
+	refreshOutDatedRepoData
+} from "@/cmds"
+import { logger } from "@/logger"
+import { program } from "commander"
+
+program.name("Kunkun CLI").description("CLI for Scraping Data")
+
+program
+	.command("refresh")
+	.description("Refresh database awesome data")
+	.option("--new-awesome-list", "Add new awesome list to DB", false)
+	.option("--awesome-list-repos", "Check new repos added to Awesome Lists", false)
+	.option("--outdated-repos", "Refresh Repo Data for outdated repos", false)
+	.option(
+		"--draft-repos",
+		"Refresh Repo data for repos that are still in draft mode (no data at all)",
+		false
+	)
+	.option("--is-awesome", "Refresh relation between repo and awesome list", false)
+	.action(
+		async (opts: {
+			newAwesomeList: boolean
+			awesomeListRepos: boolean
+			draftRepos: boolean
+			outdatedRepos: boolean
+			isAwesome: boolean
+		}) => {
+			console.log("Refreshing", opts)
+			if (opts.newAwesomeList) {
+				await refreshNewAwesomeList()
+			} else if (opts.awesomeListRepos) {
+				await refreshAwesomeListRepos()
+			} else if (opts.outdatedRepos) {
+				await refreshOutDatedRepoData()
+			} else if (opts.draftRepos) {
+				await refreshDraftRepoData()
+			} else if (opts.isAwesome) {
+				await refreshIsAwesome()
+			} else {
+				logger.error("Please specify what to refresh")
+			}
+		}
+	)
+
+program.parse()

@@ -4,10 +4,13 @@
 	"type": "module",
 	"scripts": {
 		"test": "bun test --coverage",
-		"scrape": "bun scrape.ts"
+		"scrape": "npm run fill-repo-data && npm run fill-is-awesome",
+		"fill-repo-data": "bun scripts/fill-repo-data.ts",
+		"fill-is-awesome": "bun scripts/fill-is-awesome.ts"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",
+		"@types/cli-progress": "^3.11.6",
 		"@types/unist": "^3.0.2"
 	},
 	"peerDependencies": {
@@ -16,6 +19,9 @@
 	"dependencies": {
 		"@apollo/client": "^3.11.4",
 		"@git-skyline/github-graphql": "^0.0.5",
+		"chalk": "^5.3.0",
+		"cli-progress": "^3.12.0",
+		"commander": "^12.1.0",
 		"db": "workspace:*",
 		"github-graphql": "workspace:*",
 		"graphql-request": "^7.1.0",

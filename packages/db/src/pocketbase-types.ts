@@ -53,6 +53,7 @@ export type IsAwesomeRecord = {
 
 export type RepoRecord<Tmetadata = unknown> = {
 	description?: string
+	draft?: boolean
 	metadata?: null | Tmetadata
 	missing?: boolean
 	name: string

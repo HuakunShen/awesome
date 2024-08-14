@@ -17,3 +17,7 @@ export async function fetchGitHubApiRateLimit() {
 	const { limit, remaining, used, resetAt } = res.data.rateLimit
 	return { limit, remaining, used, resetAt: new Date(resetAt) }
 }
+
+export function getGitHubGraphqlSdk() {
+	return sdk
+}

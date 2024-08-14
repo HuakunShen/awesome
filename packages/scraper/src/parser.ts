@@ -1,6 +1,7 @@
 import { fromMarkdown } from "mdast-util-from-markdown"
 import { MarkdownLink, Repo } from "types"
 import { visit } from "unist-util-visit"
+import { GitHubRepoUrlRegex } from "./constant"
 
 export function parseMarkdownLinks(md: string): MarkdownLink[] {
 	const tree = fromMarkdown(md)
@@ -18,10 +19,17 @@ export function parseMarkdownLinks(md: string): MarkdownLink[] {
 	return MarkdownLink.array().parse(links)
 }
 
-export function parseOwnerAndRepoFromGithubUrl(url: string): Repo {
-	const split = url.split("/")
-	return {
-		owner: split[3],
-		name: split[4]
+export function parseOwnerAndRepoFromGithubUrl(url: string): Repo | null {
+	const match = url.match(GitHubRepoUrlRegex)
+	if (match) {
+		return {
+			owner: match[1],
+			name: match[2]
+		}
 	}
+	return null
+}
+
+export function constructGitHubRepoUrl(owner: string, repo: string) {
+	return `https://github.com/${owner}/${repo}`
 }

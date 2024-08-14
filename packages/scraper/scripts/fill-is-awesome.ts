@@ -1,3 +1,8 @@
+import { GitHubRepoUrlRegex, PB_ADMIN_PASSWORD, PB_ADMIN_USERNAME, PB_URL } from "@/constant"
+import { parseMarkdownLinks, parseOwnerAndRepoFromGithubUrl } from "@/parser"
+import { fetchGitHubRepoReadme } from "@/scraper"
+import chalk from "chalk"
+import cliProgress from "cli-progress"
 import {
 	AwesomeListDao,
 	AwesomeListTypeOptions,
@@ -7,12 +12,6 @@ import {
 	type IsAwesomeRecord,
 	type IsAwesomeResponse
 } from "db"
-import { githubAwesomeList } from "../data/awesome-list"
-import { fetchGitHubApiRateLimit } from "../src/api"
-import { GitHubRepoUrlRegex, PB_ADMIN_PASSWORD, PB_ADMIN_USERNAME, PB_URL } from "../src/constant"
-import { parseMarkdownLinks, parseOwnerAndRepoFromGithubUrl } from "../src/parser"
-import { fetchGitHubRepoMetadata, fetchGitHubRepoReadme } from "../src/scraper"
-import { getGithubRepoUrl } from "../src/url"
 
 const adminDBClient = await getAdminPocketBaseClient(PB_URL, PB_ADMIN_USERNAME, PB_ADMIN_PASSWORD)
 const awesomeListDao = new AwesomeListDao(adminDBClient)
@@ -22,9 +21,17 @@ const isAwesomeDao = new IsAwesomeDao(adminDBClient)
 const allLists = await awesomeListDao.getAll()
 const listToRepos: Record<string, Set<string>> = {}
 
+console.log(chalk.blue(`Map Awesome List to Repos`))
+const bar1 = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
+bar1.start(allLists.length, 0)
 for (const list of allLists) {
+	bar1.increment()
 	if (list.type === AwesomeListTypeOptions.github) {
-		const { owner, name: repoName } = parseOwnerAndRepoFromGithubUrl(list.url)
+		const parse = parseOwnerAndRepoFromGithubUrl(list.url)
+		if (!parse) {
+			continue
+		}
+		const { owner, name: repoName } = parse
 		const awesomeReadme = await fetchGitHubRepoReadme(owner, repoName)
 		const markdownLinks = parseMarkdownLinks(awesomeReadme)
 		// filter out non-github-repo links with regex
@@ -37,7 +44,7 @@ for (const list of allLists) {
 		}
 	}
 }
-
+bar1.stop()
 const awesomeListUrlToId = allLists.reduce(
 	(acc, list) => {
 		acc[list.url] = list.id
@@ -45,7 +52,7 @@ const awesomeListUrlToId = allLists.reduce(
 	},
 	{} as Record<string, string>
 )
-const allRepos = await awesomeRepoDao.getAllBasicRepos()
+const allRepos = await awesomeRepoDao.getAll({})
 const repoToId = allRepos.reduce(
 	(acc, repo) => {
 		acc[repo.url] = repo.id
@@ -73,14 +80,14 @@ Object.entries(listToRepos).forEach(async ([listUrl, repoUrls]) => {
 		}
 	}
 })
-let progress = 0
+const bar2 = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
 async function runJob(job: {
 	repoId: string
 	listId: string
 }): Promise<IsAwesomeResponse | null | Error> {
-	progress++
-	process.stdout.write(`Progress: ${progress}/${candidates.size}\r`)
+	// process.stdout.write(`Progress: ${progress}/${candidates.size}\r`)
 	try {
+		bar2.increment()
 		const res = await isAwesomeDao.insertIfNotExist({
 			repo: job.repoId,
 			awesome_list: job.listId
@@ -90,39 +97,11 @@ async function runJob(job: {
 		return error as Error
 	}
 }
-
-const jobBatches = []
-const batchSize = 1
-let batch = []
+bar2.start(candidates.size, 0)
 for (const candidate of candidates) {
-	if (batch.length === batchSize) {
-		jobBatches.push(batch)
-		batch = []
-	}
-	batch.push(candidate)
-}
-
-for (const jobBatch of jobBatches) {
-	const jobs = jobBatch.map((job) => runJob(job))
-	let result = await Promise.all(jobs)
-	for (const res of result) {
-		if (res instanceof Error) {
-			console.log("error", res)
-		}
+	const res = await runJob(candidate)
+	if (res instanceof Error) {
+		console.log("error", res, candidate)
 	}
 }
-
-// const jobs = Array.from(candidates).map((candidate) => runJob(candidate))
-// let result = await Promise.all(jobs)
-// for (const res of result) {
-// 	if (res instanceof Error) {
-// 		console.log("error", res)
-// 	}
-// }
-
-// for (const candidate of candidates) {
-// 	const res = await runJob(candidate)
-// 	if (res instanceof Error) {
-// 		console.log("error", res, candidate)
-// 	}
-// }
+bar2.stop()
