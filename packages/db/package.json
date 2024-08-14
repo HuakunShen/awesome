@@ -1,19 +1,24 @@
 {
-  "name": "db",
-  "module": "index.ts",
-  "type": "module",
-  "scripts": {
-    "gen": "bun scripts/generate-types.ts"
-  },
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5.0.0"
-  },
-  "dependencies": {
-    "pocketbase": "^0.21.4",
-    "pretty-bytes": "^6.1.1",
-    "zod": "^3.23.8"
-  }
+	"name": "db",
+	"module": "index.ts",
+	"type": "module",
+	"scripts": {
+		"prisma": "prisma",
+		"postinstall": "npm run db:generate",
+		"db:generate": "prisma generate",
+		"db:push": "prisma db push"
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"prisma": "^5.18.0",
+		"db": "workspace:*"
+	},
+	"peerDependencies": {
+		"typescript": "^5.0.0"
+	},
+	"dependencies": {
+		"@prisma/client": "^5.18.0",
+		"@types/node": "^22.3.0",
+		"ts-node": "^10.9.2"
+	}
 }

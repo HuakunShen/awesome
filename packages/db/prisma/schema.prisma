@@ -1,0 +1,67 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+type License {
+  key      String
+  name     String
+  nickname String?
+}
+
+model CandidateRepo {
+  id  String @id @default(auto()) @map("_id") @db.ObjectId
+  url String
+}
+
+model Repo {
+  id                     String       @id @default(auto()) @map("_id") @db.ObjectId
+  owner                  String
+  name                   String
+  stars                  Int
+  url                    String
+  updatedAt              DateTime     @updatedAt
+  createdAt              DateTime     @default(now())
+  missing                Boolean      @default(false)
+  draft                  Boolean      @default(true)
+  // Repo Metadata
+  description            String?
+  diskUsage              Int?
+  forkCount              Int
+  hasDiscussionsEnabled  Boolean
+  hasIssuesEnabled       Boolean
+  hasSponsorshipsEnabled Boolean
+  homepageUrl            String?
+  licenseInfo            License?
+  openIssuesCount        Int
+  pullRequestsCount      Int
+  releasesCount          Int
+  repoPushedAt           DateTime
+  repoUpdatedAt          DateTime
+  repoCreatedAt          DateTime
+  watchersCount          Int
+  AwesomeList            AwesomeList? @relation(fields: [awesomeListId], references: [id])
+  awesomeListId          String?      @db.ObjectId
+}
+
+enum AwesomeListType {
+  GitHub
+}
+
+model AwesomeList {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  url         String
+  tags        String[]
+  githubRepos Repo[]
+}
