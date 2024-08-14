@@ -31,8 +31,8 @@ export const RepoMetadata = z.object({
 	licenseInfo: z
 		.object({
 			__typename: z.string(),
-			key: z.string().nullable(),
-			name: z.string().nullable(),
+			key: z.string(),
+			name: z.string(),
 			nickname: z.string().nullable()
 		})
 		.nullable()

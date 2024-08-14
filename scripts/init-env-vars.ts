@@ -22,7 +22,6 @@ const targetPkgPaths = [
 	"apps/web",
 	"packages/scraper",
 	"packages/github-graphql",
-	"packages/mongodb",
 	"packages/db",
 	"apps/dashboard"
 ]

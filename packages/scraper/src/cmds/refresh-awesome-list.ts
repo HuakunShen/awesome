@@ -1,68 +1,51 @@
 import { githubAwesomeList } from "@/../data/awesome-list"
-import { fetchGitHubApiRateLimit, getGitHubRepoMetadataInBatch } from "@/api"
-import {
-	CACHE_INVALIDATION_TIME,
-	DAY_MS,
-	GitHubRepoUrlRegex,
-	PB_ADMIN_PASSWORD,
-	PB_ADMIN_USERNAME,
-	PB_URL
-} from "@/constant"
+import { fetchGitHubApiRateLimit, getGitHubGraphqlSdk, getGitHubRepoMetadataInBatch } from "@/api"
+import { CACHE_INVALIDATION_TIME, DAY_MS, GitHubRepoUrlRegex } from "@/constant"
 import { logger } from "@/logger"
+import { githubRepoMetadataToDBRepo } from "@/model"
 import {
 	constructGitHubRepoUrl,
 	parseMarkdownLinks,
 	parseOwnerAndRepoFromGithubUrl
 } from "@/parser"
-import { fetchGitHubRepoReadme } from "@/scraper"
+import { fetchGitHubRepoReadme, indexGitHubRepo } from "@/scraper"
 import { getGithubRepoUrl } from "@/url"
 import { isOutDated } from "@/utils"
 import chalk from "chalk"
 import cliProgress from "cli-progress"
-import {
-	AwesomeListDao,
-	AwesomeListTypeOptions,
-	AwesomeRepoDao,
-	getAdminPocketBaseClient
-} from "db"
+import { db } from "db"
 import type { Repo, RepoMetadata } from "types"
 
-const adminDBClient = await getAdminPocketBaseClient(PB_URL, PB_ADMIN_USERNAME, PB_ADMIN_PASSWORD)
-const awesomeListDao = new AwesomeListDao(adminDBClient)
-const awesomeRepoDao = new AwesomeRepoDao(adminDBClient, awesomeListDao)
-
 /**
- * Check if there is new awesome list not added to DB
+ * Add newly added awesome list to DB
  */
 export async function refreshNewAwesomeList() {
 	logger.info(`Refresh Awesome List: Add new Awesome List and Draft Repos`)
-	let allLists = await awesomeListDao.getAll({})
+	let allLists = await db.getAllAwesomeLists()
 	const existingListUrls = allLists.map((list) => list.url)
-	const reposNotInDb = githubAwesomeList.filter(
-		(repo) => !existingListUrls.includes(getGithubRepoUrl(repo.owner, repo.name))
+	const awesomeReposUrlsNotInDb = new Set(
+		githubAwesomeList
+			.filter((repo) => !existingListUrls.includes(getGithubRepoUrl(repo.owner, repo.name)))
+			.map((repo) => getGithubRepoUrl(repo.owner, repo.name))
 	)
-	if (reposNotInDb.length === 0) {
+	if (awesomeReposUrlsNotInDb.size === 0) {
 		logger.info("No new awesome list to add")
 		return
 	}
-	const reposDataArr = await getGitHubRepoMetadataInBatch(reposNotInDb)
-	const urlToRepoMetadataMap = reposDataArr.reduce(
-		(acc, repo2) => {
-			acc[repo2.url] = repo2
-			return acc
-		},
-		{} as Record<string, RepoMetadata>
-	)
 	const pbar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
-	pbar.start(Object.keys(urlToRepoMetadataMap).length, 0)
-	for (const [repoUrl, repoMetadata] of Object.entries(urlToRepoMetadataMap)) {
+	pbar.start(awesomeReposUrlsNotInDb.size, 0)
+	for (const repo of Array.from(awesomeReposUrlsNotInDb)) {
 		pbar.increment()
-		await awesomeListDao.insertOrUpdate({
-			url: repoUrl,
-			name: repoMetadata.name,
-			type: AwesomeListTypeOptions.github,
-			metadata: repoMetadata
+		const parse = parseOwnerAndRepoFromGithubUrl(repo)
+		if (!parse) {
+			continue
+		}
+		const repoUrl = getGithubRepoUrl(parse.owner, parse.name)
+		await db.createAwesomeList({
+			name: parse.name,
+			url: repoUrl
 		})
+		await indexGitHubRepo(repoUrl) // index the awesome list repo
 	}
 	pbar.stop()
 }
@@ -73,47 +56,41 @@ export async function refreshNewAwesomeList() {
  * Repo data will be refreshed in another command
  */
 export async function refreshAwesomeListRepos() {
-	const allLists = await awesomeListDao.getAll({ extraFields: ["url"] })
+	const thresholdDate = new Date(Date.now() - CACHE_INVALIDATION_TIME)
+	const outdatedAwesomeLists = await db.getOutdatedAwesomeLists(thresholdDate)
 	const pbar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
-	pbar.start(allLists.length, 0)
-	const allRepos = new Set(allLists.map((repo) => repo.url))
-	for (const awesomeList of allLists) {
+	pbar.start(outdatedAwesomeLists.length, 0)
+	const allRepos = await db.client.repo.findMany({ select: { url: true } })
+	const allReposUrls = new Set(allRepos.map((repo) => repo.url))
+	for (const awesomeList of outdatedAwesomeLists) {
 		pbar.increment()
-		// if (awesomeList.updated && !isOutDated(new Date(awesomeList.updated), CACHE_INVALIDATION_TIME)) {
-		// 	// if `updated` exists and is not outdated, continue scraping.
-		// 	// skip otherwise
-		// console.log("skipping", awesomeList.url);
-		// 	continue
-		// }
-		// console.log("not skipping", awesomeList.url);
-
-		if (awesomeList.type === AwesomeListTypeOptions.github) {
-			const parse = parseOwnerAndRepoFromGithubUrl(awesomeList.url)
+		const parse = parseOwnerAndRepoFromGithubUrl(awesomeList.url)
+		if (!parse) {
+			logger.error(`Failed to parse owner and repo from ${awesomeList.url}`)
+			continue
+		}
+		const { owner: awesomeListOwner, name: awesomeListName } = parse
+		const awesomeReadme = await fetchGitHubRepoReadme(awesomeListOwner, awesomeListName)
+		const markdownLinks = parseMarkdownLinks(awesomeReadme)
+		// filter out non-github-repo links with regex
+		const githubReposInAwesomeReadme = markdownLinks.filter((link) =>
+			link.url.match(GitHubRepoUrlRegex)
+		)
+		for (const repo of githubReposInAwesomeReadme) {
+			const parse = parseOwnerAndRepoFromGithubUrl(repo.url)
 			if (!parse) {
 				continue
 			}
 			const { owner, name: repoName } = parse
-			const awesomeReadme = await fetchGitHubRepoReadme(owner, repoName)
-			const markdownLinks = parseMarkdownLinks(awesomeReadme)
-			// filter out non-github-repo links with regex
-			const githubRepos = markdownLinks.filter((link) => link.url.match(GitHubRepoUrlRegex))
-			for (const repo of githubRepos) {
-				const parse = parseOwnerAndRepoFromGithubUrl(repo.url)
-				if (!parse) {
-					continue
-				}
-				const { owner, name: repoName } = parse
-				const url = constructGitHubRepoUrl(owner, repoName)
-				if (!allRepos.has(url)) {
-					await awesomeRepoDao.insert({
-						name: repoName,
-						url,
-						draft: true
-					})
-				}
+			const url = constructGitHubRepoUrl(owner, repoName)
+			if (!allReposUrls.has(url)) {
+				// index new repo, add to candidate repo collection
+				await db.createCandidateRepo({
+					url
+				})
 			}
-			await awesomeListDao.setLastRefreshed(awesomeList.id)
 		}
+		await db.refreshAwesomeList(awesomeList.id)
 	}
 	pbar.stop()
 	logger.info(`Refresh Awesome List: Add new Awesome List and Draft Repos`)

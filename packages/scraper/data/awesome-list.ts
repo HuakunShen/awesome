@@ -19,6 +19,7 @@ export const githubRepoUrls = [
 	"https://github.com/wasabeef/awesome-android-ui",
 	"https://github.com/vsouza/awesome-ios",
 	"https://github.com/rust-unofficial/awesome-rust",
+	"https://github.com/catdevnull/awesome-zig",
 	"https://github.com/akullpp/awesome-java",
 	"https://github.com/jondot/awesome-react-native",
 	"https://github.com/sorrycc/awesome-javascript",
