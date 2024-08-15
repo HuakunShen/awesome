@@ -1,3 +1,6 @@
+from neomodel import config
+import os
+
 from neomodel import (
     StructuredNode,
     AsyncStructuredNode,
@@ -12,7 +15,7 @@ from neomodel import (
 )
 
 
-class Repo(AsyncStructuredNode):
+class BaseRepo:
     uid = UniqueIdProperty()
     owner = StringProperty()
     name = StringProperty(required=True)
@@ -40,10 +43,27 @@ class Repo(AsyncStructuredNode):
     awesomeList = RelationshipTo("AwesomeList", "IN_AWESOME_LIST")
 
 
-class AwesomeList(AsyncStructuredNode):
+class Repo(BaseRepo, StructuredNode):
+    pass
+
+
+class AsyncRepo(BaseRepo, AsyncStructuredNode):
+    pass
+
+
+class BaseAwesomeList:
     uid = UniqueIdProperty()
     name = StringProperty(required=True)
     url = StringProperty(unique_index=True, required=True)
     tags = ArrayProperty(StringProperty())
     lastRefreshTime = DateTimeProperty(default_now=True)
     createdAt = DateTimeProperty(default_now=True)
+    isFrom = RelationshipTo(Repo, "IS_FROM")
+
+
+class AwesomeList(BaseAwesomeList, StructuredNode):
+    pass
+
+
+class AsyncAwesomeList(BaseAwesomeList, AsyncStructuredNode):
+    pass

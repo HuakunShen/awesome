@@ -4,6 +4,7 @@ from datetime import datetime
 from pocketbase.models.utils.base_model import BaseModel as PocketBaseModel
 
 
+
 class AwesomeList(BaseModel):
     url: str
     type: str

@@ -6,7 +6,7 @@ from pymongo.collection import Collection
 from dotenv import load_dotenv
 
 load_dotenv()
-from pylib.ogm import AwesomeList, Repo
+from pylib.ogm import AsyncAwesomeList, Repo
 from neomodel import (
     config,
     StructuredNode,
@@ -27,7 +27,7 @@ with open(raw_path, "r") as f:
     data = json.load(f)
 
 
-async def create_is_awesome_relation(repo: Repo, awesome_list: AwesomeList):
+async def create_is_awesome_relation(repo: Repo, awesome_list: AsyncAwesomeList):
     if repo and not repo.awesomeList:
         # print(f"connect {repo.name} to {awesome_list.name}")
         await repo.awesomeList.connect(awesome_list)
@@ -47,7 +47,7 @@ async def create_is_awesome_relation(repo: Repo, awesome_list: AwesomeList):
 async def main():
     for awesome_url, repo_urls in tqdm(list(reversed(data.items()))):
         print(awesome_url)
-        a_list: AwesomeList = await AwesomeList.nodes.get(url=awesome_url)
+        a_list: AsyncAwesomeList = await AsyncAwesomeList.nodes.get(url=awesome_url)
         tasks = []
         for repo_url in repo_urls:
             repo: Repo = await Repo.nodes.get_or_none(url=repo_url)
