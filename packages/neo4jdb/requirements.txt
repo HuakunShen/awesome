@@ -1,0 +1,4 @@
+shapely
+neomodel
+pandas
+python-dotenv
