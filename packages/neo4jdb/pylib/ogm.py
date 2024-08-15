@@ -1,5 +1,6 @@
 from neomodel import (
     StructuredNode,
+    AsyncStructuredNode,
     StringProperty,
     ArrayProperty,
     IntegerProperty,
@@ -11,7 +12,7 @@ from neomodel import (
 )
 
 
-class Repo(StructuredNode):
+class Repo(AsyncStructuredNode):
     uid = UniqueIdProperty()
     owner = StringProperty()
     name = StringProperty(required=True)
@@ -39,7 +40,7 @@ class Repo(StructuredNode):
     awesomeList = RelationshipTo("AwesomeList", "IN_AWESOME_LIST")
 
 
-class AwesomeList(StructuredNode):
+class AwesomeList(AsyncStructuredNode):
     uid = UniqueIdProperty()
     name = StringProperty(required=True)
     url = StringProperty(unique_index=True, required=True)
