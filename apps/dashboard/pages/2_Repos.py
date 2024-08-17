@@ -8,7 +8,10 @@ import pandas as pd
 import pydeck as pdk
 from urllib.error import URLError
 from dashboard import dao
+import os
+from neomodel import config
 
+config.DATABASE_URL = os.getenv("NEO4J_DATABASE_URL")
 
 st.set_page_config(page_title="Repos", page_icon="🌍", layout="wide")
 

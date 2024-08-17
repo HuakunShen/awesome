@@ -6,7 +6,7 @@ from datetime import datetime
 import plotly.express as px
 
 
-@st.cache_data
+# @st.cache_data
 def fetch_star_dates(owner: str, repo: str) -> list[datetime]:
     url = f"https://api.github.com/repos/{owner}/{repo}/stargazers"
     headers = {"Accept": "application/vnd.github.v3.star+json"}

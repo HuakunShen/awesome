@@ -1,0 +1,10 @@
+pandas==2.2.2
+neo4j==5.19.0
+neomodel==5.3.2
+streamlit==1.37.1
+plotly==5.23.0
+pydantic==2.8.2
+python-dotenv==1.0.1
+pocketbase==0.12.1
+matplotlib==3.9.1
+

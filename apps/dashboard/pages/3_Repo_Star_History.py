@@ -11,7 +11,10 @@ import pandas as pd
 import pydeck as pdk
 from urllib.error import URLError
 from dashboard import dao, api
+import os
+from neomodel import config
 
+config.DATABASE_URL = os.getenv("NEO4J_DATABASE_URL")
 
 st.set_page_config(page_title="Star History", page_icon="🌍", layout="wide")
 
@@ -53,7 +56,7 @@ if match:
             star_history_df,
             x="date",
             y="stars",
-            # markers=True,
+            markers=True,
         )
     )
     # st.dataframe(star_history_df)

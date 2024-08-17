@@ -5,7 +5,7 @@ from packages.neo4jdb.pylib import ogm
 import streamlit as st
 
 
-@st.cache_data
+# @st.cache_data
 def all_awesome_lists() -> list[AwesomeListRepo]:
     print("all_awesome_lists called")
     data = db.cypher_query(
@@ -32,7 +32,7 @@ def all_awesome_lists() -> list[AwesomeListRepo]:
         )
     return ret
 
-@st.cache_data
+# @st.cache_data
 def all_awesome_lists_df() -> pd.DataFrame:
     all_awe_lists = all_awesome_lists()
     df = pd.DataFrame([a.__dict__ for a in all_awe_lists])
