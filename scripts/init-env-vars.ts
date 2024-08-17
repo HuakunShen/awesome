@@ -21,7 +21,6 @@ GITHUB_TOKEN	=${process.env.GITHUB_TOKEN}
 const targetPkgPaths = [
 	"apps/web",
 	"packages/scraper",
-	"packages/github-graphql",
 	"packages/db",
 	"packages/neo4jdb",
 	"apps/dashboard"

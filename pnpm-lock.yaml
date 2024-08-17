@@ -153,6 +153,19 @@ importers:
         specifier: ^5.5.4
         version: 5.5.4
 
+  packages/neo4jdb:
+    dependencies:
+      commander:
+        specifier: ^12.1.0
+        version: 12.1.0
+      typescript:
+        specifier: ^5.0.0
+        version: 5.5.4
+    devDependencies:
+      '@types/bun':
+        specifier: latest
+        version: 1.1.6
+
   packages/scraper:
     dependencies:
       '@apollo/client':
@@ -161,6 +174,9 @@ importers:
       '@git-skyline/github-graphql':
         specifier: ^0.0.5
         version: 0.0.5(graphql-ws@5.16.0(graphql@16.9.0))(react@18.3.1)(typescript@5.5.4)
+      '@hk/github-graphql':
+        specifier: npm:@jsr/hk__github-graphql@^0.1.0
+        version: '@jsr/hk__github-graphql@0.1.0'
       '@prisma/client':
         specifier: ^5.18.0
         version: 5.18.0(prisma@5.18.0)
@@ -1340,6 +1356,9 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
+
+  '@jsr/hk__github-graphql@0.1.0':
+    resolution: {integrity: sha512-z1ISpKhnX3wVs5DTRrpnNagaefOHpfnMy+sI0maQ2PYDMhHwDrm0n7KY9PkuHQZeqWf8Ng8F0CfsSylh4xITqw==, tarball: https://npm.jsr.io/~/11/@jsr/hk__github-graphql/0.1.0.tgz}
 
   '@kamilkisiela/fast-url-parser@1.1.4':
     resolution: {integrity: sha512-gbkePEBupNydxCelHCESvFSFM8XPh1Zs/OAVRW/rKpEqPAl5PbOM90Si8mv9bvnR53uPD2s/FiRxdvSejpRJew==}
@@ -5672,6 +5691,17 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.0
+
+  '@jsr/hk__github-graphql@0.1.0':
+    dependencies:
+      '@graphql-typed-document-node/core': 3.2.0(graphql@16.9.0)
+      graphql: 16.9.0
+      graphql-request: 7.1.0(graphql@16.9.0)
+      graphql-tag: 2.12.6(graphql@16.9.0)
+    transitivePeerDependencies:
+      - '@dprint/formatter'
+      - '@dprint/typescript'
+      - dprint
 
   '@kamilkisiela/fast-url-parser@1.1.4': {}
 

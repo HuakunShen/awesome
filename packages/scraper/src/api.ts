@@ -5,7 +5,7 @@ import {
 	InMemoryCache,
 	type NormalizedCacheObject
 } from "@apollo/client"
-import { getSdk, type RepositoryQuery } from "github-graphql/req"
+import { getSdk, type RepositoryQuery } from "@hk/github-graphql/req"
 import { GraphQLClient } from "graphql-request"
 import { GitHubGqlRepoReadme, GitHubGqlRepoReadmeRaw, RepoMetadata, type Repo } from "types"
 import { GITHUB_TOKEN } from "./constant"

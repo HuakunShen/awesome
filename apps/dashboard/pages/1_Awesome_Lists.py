@@ -10,14 +10,22 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent.parent))
 
-from packages.neo4jdb.pylib.ogm import AwesomeList, Repo, AsyncAwesomeList
+# from packages.neo4jdb.pylib.ogm import AwesomeList, Repo, AsyncAwesomeList
+from dashboard import dao, snippets
+from neomodel import config
+
+config.DATABASE_URL = os.getenv("NEO4J_DATABASE_URL")
+
 
 
 st.set_page_config(page_title="Awesome Lists", page_icon="📈", layout="wide")
 
-st.markdown("# Plotting Demo")
+st.markdown(
+    """
+# Awesome Lists
+This page contains a list of popular awesome lists.
+"""
+)
 st.sidebar.header("Plotting Demo")
 
-awesome_list_repos = AwesomeList.nodes.all()
-awesome_list_df = pd.DataFrame([l.__dict__ for l in awesome_list_repos])
-st.dataframe(awesome_list_df[["name", "url"]], width=1000, height=1000)
+snippets.render_all_awesome_list_repos_df()

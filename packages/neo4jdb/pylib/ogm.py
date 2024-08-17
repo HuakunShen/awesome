@@ -1,4 +1,7 @@
-from neomodel import config
+from datetime import datetime
+
+import pytz
+from neomodel import config, StructuredRel
 import os
 
 from neomodel import (
@@ -11,8 +14,17 @@ from neomodel import (
     BooleanProperty,
     DateTimeProperty,
     RelationshipTo,
+    RelationshipFrom,
     JSONProperty,
 )
+
+
+class AwesomeListRepoRel(StructuredRel):
+    pass
+
+
+class AwesomeListFromRepoRel(StructuredRel):
+    pass
 
 
 class BaseRepo:
@@ -40,14 +52,12 @@ class BaseRepo:
     repoCreatedAt = DateTimeProperty()
     watchersCount = IntegerProperty()
     createdAt = DateTimeProperty(default_now=True)
-    awesomeList = RelationshipTo("AwesomeList", "IN_AWESOME_LIST")
+    awesomeList = RelationshipTo(
+        "AwesomeList", "IN_AWESOME_LIST", model=AwesomeListRepoRel
+    )
 
 
 class Repo(BaseRepo, StructuredNode):
-    pass
-
-
-class AsyncRepo(BaseRepo, AsyncStructuredNode):
     pass
 
 
@@ -58,12 +68,18 @@ class BaseAwesomeList:
     tags = ArrayProperty(StringProperty())
     lastRefreshTime = DateTimeProperty(default_now=True)
     createdAt = DateTimeProperty(default_now=True)
-    isFrom = RelationshipTo(Repo, "IS_FROM")
+    isFrom = RelationshipTo("Repo", "IS_FROM", model=AwesomeListFromRepoRel)
+    repos = RelationshipFrom(Repo, "IN_AWESOME_LIST")
 
 
 class AwesomeList(BaseAwesomeList, StructuredNode):
     pass
 
-
-class AsyncAwesomeList(BaseAwesomeList, AsyncStructuredNode):
-    pass
+    # since = DateTimeProperty(
+    #     default=lambda: datetime.now(pytz.utc),
+    #     index=True
+    # )
+    # met = StringProperty()
+    # # Uniqueness constraints for relationship properties
+    # # are only available from Neo4j version 5.7 onwards
+    # meeting_id = StringProperty(unique_index=True)

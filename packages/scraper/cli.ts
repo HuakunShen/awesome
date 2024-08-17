@@ -9,7 +9,7 @@ import {
 import { logger } from "@/logger"
 import { program } from "commander"
 
-program.name("Kunkun CLI").description("CLI for Scraping Data")
+program.name("Awesome CLI").description("CLI for Scraping Data")
 
 program
 	.command("refresh")

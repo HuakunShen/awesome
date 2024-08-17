@@ -4,7 +4,6 @@ from datetime import datetime
 from pocketbase.models.utils.base_model import BaseModel as PocketBaseModel
 
 
-
 class AwesomeList(BaseModel):
     url: str
     type: str
@@ -48,3 +47,12 @@ class IsAwesome(BaseModel):
 
     def from_list(x: list[PocketBaseModel]):
         return [IsAwesome.model_validate(i) for i in x]
+
+
+class AwesomeListRepo(BaseModel):
+    """Awesome List Repository Info"""
+    owner: str
+    name: str
+    url: str
+    stars: int
+    description: Optional[str]
