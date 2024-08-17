@@ -10,5 +10,5 @@ RUN pip install -r requirements.txt
 EXPOSE 8501
 
 ENV PYTHONPATH=/app
-WORKDIR /app
+WORKDIR /app/apps/dashboard
 CMD ["streamlit", "run", "Main.py"]
