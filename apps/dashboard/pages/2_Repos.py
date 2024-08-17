@@ -44,6 +44,7 @@ for option in options:
             {
                 "Name": repo.name,
                 "Stars": repo.stars,
+                "Star History": "/Repo_Star_History?repo_url=" + repo.url,
                 "Awesome List": option["name"],
                 "Description": repo.description,
                 "URL": repo.url,
@@ -93,7 +94,7 @@ if not repos:
 repos_df = pd.DataFrame(repos)
 repos_df.sort_values(by="Stars", ascending=False, inplace=True)
 repos_df.reset_index(drop=True, inplace=True)
-repos_df["Star History"] = "/Repo_Star_History?repo_url=" + repos_df["URL"]
+# repos_df["Star History"] = "/Repo_Star_History?repo_url=" + repos_df["URL"]
 st.dataframe(
     repos_df,
     column_config={

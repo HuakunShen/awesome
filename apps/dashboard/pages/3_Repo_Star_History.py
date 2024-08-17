@@ -16,7 +16,7 @@ from neomodel import config
 
 config.DATABASE_URL = os.getenv("NEO4J_DATABASE_URL")
 
-st.set_page_config(page_title="Star History", page_icon="🌍", layout="wide")
+st.set_page_config(page_title="Star History", page_icon="🌍")
 
 
 # read from url param
@@ -42,20 +42,30 @@ if match:
     # dates = api.fetch_star_dates(owner, repo)
     # fig = api.plot_star_history(dates)
     star_url = f"https://star-history.pockethost.io/star-history/{owner}/{repo}"
-    print("star_url", star_url)
-    star_count = requests.get(star_url).json()
+    res = requests.get(star_url)
+    if not res.ok:
+        st.error(
+            f"Failed to fetch star history for {owner}/{repo}. It may be the first time this repo is being indexed. Come back in a few minutes."
+        )
+        st.stop()
+    star_count = res.json()
     star_history_df = pd.DataFrame(star_count)
     if len(star_history_df) > 1000:
         # uniformly sample 1000 rows
         star_history_df = star_history_df.sample(n=10)
     print(star_history_df)
     # star_history_df.rename(columns={"date": "Date", "stars": "Stars"}, inplace=True)
+    if len(star_history_df) == 0:
+        st.error("No star history found for this repo.")
+        st.stop()
     star_history_df.sort_values(by="date", inplace=True)
+    star_history_df.rename(columns={"date": "Date", "stars": "Stars"}, inplace=True)
     st.plotly_chart(
         px.line(
             star_history_df,
-            x="date",
-            y="stars",
+            title=f"Star History for {owner}/{repo}",
+            x="Date",
+            y="Stars",
             markers=True,
         )
     )
