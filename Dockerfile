@@ -11,4 +11,4 @@ EXPOSE 8501
 
 ENV PYTHONPATH=/app
 WORKDIR /app/apps/dashboard
-CMD ["streamlit", "run", "AwesomeAnalysis.py"]
+CMD ["streamlit", "run", "Awesome_Analysis.py"]
