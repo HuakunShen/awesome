@@ -81,7 +81,34 @@ export async function indexGitHubRepo(githubRepoUrl: string, awesomeListId?: str
 	const { owner, name: repoName } = parse
 	const cleanGitHubRepoUrl = getGithubRepoUrl(owner, repoName)
 	console.log(`Indexing GitHub Repo: ${cleanGitHubRepoUrl}; Original URL: ${githubRepoUrl}`)
+	const dbRepos = (
+		await neo4jSdk.Repos({
+			where: {
+				url: cleanGitHubRepoUrl
+			}
+		})
+	).data.repos
+	const dbRepo = dbRepos.at(0)
+	// console.log(dbRepos)
 
+	const thresholdDate = new Date(Date.now() - CACHE_INVALIDATION_TIME)
+	if (dbRepo) {
+		const lastModified = new Date(dbRepo.lastModified)
+		if (lastModified > thresholdDate) {
+			console.log(`${cleanGitHubRepoUrl}: ${lastModified} > ${thresholdDate} skip`)
+			return
+		} else {
+			console.log(`Repo ${cleanGitHubRepoUrl} is not up to date; updating`)
+			console.log("last mod: ")
+			console.log(lastModified)
+			console.log(typeof lastModified)
+
+			console.log(thresholdDate)
+			return
+		}
+	} else {
+		console.log(`Repo ${cleanGitHubRepoUrl} is not in database; adding`)
+	}
 	const repoMetadata = await fetchGitHubRepoMetadata(owner, repoName)
 	// dbRepo could be undefined if no repo is found
 	await addRepoToDB(cleanGitHubRepoUrl, owner, repoName, awesomeListId, repoMetadata)

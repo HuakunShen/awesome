@@ -24,9 +24,6 @@ jobs:
           bun-version: 1.1.22
       - name: Init Environment Variables
         env:
-          PB_URL: ${{ secrets.PB_URL }}
-          PB_ADMIN_USERNAME: ${{ secrets.PB_ADMIN_USERNAME }}
-          PB_ADMIN_PASSWORD: ${{ secrets.PB_ADMIN_PASSWORD }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NEO4J_URI: ${{ secrets.NEO4J_URI }}
           NEO4J_USERNAME: ${{ secrets.NEO4J_USERNAME }}
@@ -37,6 +34,13 @@ jobs:
       - name: Install Dependencies
         run: pnpm i
       - name: Build and Test
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEO4J_URI: ${{ secrets.NEO4J_URI }}
+          NEO4J_USERNAME: ${{ secrets.NEO4J_USERNAME }}
+          NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
+          NEO4J_DATABASE_URL: ${{ secrets.NEO4J_DATABASE_URL }}
+
         run: |
           pnpm build
           pnpm test

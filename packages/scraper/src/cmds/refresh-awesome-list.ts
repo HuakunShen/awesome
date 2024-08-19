@@ -82,7 +82,7 @@ export async function refreshAwesomeListRepos(options: { batch?: boolean } = {})
 	// const allRepos = await db.client.repo.findMany({ select: { url: true } })
 	const allRepos = (await neo4jSdk.Repos()).data.repos
 	const allReposUrls = new Set(allRepos.map((repo) => repo.url))
-	for (const awesomeList of outdatedAwesomeLists) {
+	for (const awesomeList of outdatedAwesomeLists.reverse()) {
 		pbar.increment()
 		const parse = parseOwnerAndRepoFromGithubUrl(awesomeList.url)
 		if (!parse) {
