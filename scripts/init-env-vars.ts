@@ -10,10 +10,13 @@ if (!fs.existsSync(rootEnvPath)) {
 	Bun.write(
 		rootEnvPath,
 		`
-PB_URL=${process.env.PB_URL}
-PB_ADMIN_USERNAME=${process.env.PB_ADMIN_USERNAME}
-PB_ADMIN_PASSWORD=${process.env.PB_ADMIN_PASSWORD}
-GITHUB_TOKEN	=${process.env.GITHUB_TOKEN}
+GITHUB_TOKEN=${process.env.GITHUB_TOKEN}
+NEO4J_URI=${process.env.NEO4J_URI}
+NEO4J_USERNAME=${process.env.NEO4J_USERNAME}
+NEO4J_PASSWORD=${process.env.NEO4J_PASSWORD}
+AURA_INSTANCEID=${process.env.AURA_INSTANCEID}
+AURA_INSTANCENAME=${process.env.AURA_INSTANCENAME}
+NEO4J_DATABASE_URL=${process.env.NEO4J_DATABASE_URL}
 `
 	)
 }
