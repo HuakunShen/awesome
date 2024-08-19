@@ -28,6 +28,10 @@ jobs:
           PB_ADMIN_USERNAME: ${{ secrets.PB_ADMIN_USERNAME }}
           PB_ADMIN_PASSWORD: ${{ secrets.PB_ADMIN_PASSWORD }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEO4J_URI: ${{ secrets.NEO4J_URI }}
+          NEO4J_USERNAME: ${{ secrets.NEO4J_USERNAME }}
+          NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
+          NEO4J_DATABASE_URL: ${{ secrets.NEO4J_DATABASE_URL }}
         run: |
           bun scripts/init-env-vars.ts
       - name: Install Dependencies
