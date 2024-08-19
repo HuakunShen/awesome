@@ -8,5 +8,6 @@
     "activityBar.background": "#3F2908",
     "titleBar.activeBackground": "#58390B",
     "titleBar.activeForeground": "#FEFAF5"
-  }
+  },
+  "python.envFile": "",
 }

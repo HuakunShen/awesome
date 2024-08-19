@@ -9,8 +9,7 @@ class AwesomeList(BaseModel):
     type: str
     metadata: dict
     name: str
-    created: datetime
-    updated: datetime
+    lastModified: datetime
     id: str
 
     def from_pb(x: PocketBaseModel):

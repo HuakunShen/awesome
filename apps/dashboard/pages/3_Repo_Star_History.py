@@ -52,7 +52,7 @@ if match:
     star_history_df = pd.DataFrame(star_count)
     if len(star_history_df) > 1000:
         # uniformly sample 1000 rows
-        star_history_df = star_history_df.sample(n=10)
+        star_history_df = star_history_df.sample(n=100)
     print(star_history_df)
     # star_history_df.rename(columns={"date": "Date", "stars": "Stars"}, inplace=True)
     if len(star_history_df) == 0:

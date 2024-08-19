@@ -202,9 +202,11 @@ async function addRepoToDB(
 			await neo4jSdk.CreateRepos({
 				input: {
 					...newData,
-					inAwesomeListAwesomeLists: {
-						connect: [{ where: { node: { id: awesomeListId } } }]
-					}
+					inAwesomeListAwesomeLists: awesomeListId
+						? {
+								connect: [{ where: { node: { id: awesomeListId } } }]
+							}
+						: undefined
 				}
 			})
 		}

@@ -28,5 +28,5 @@ config.DATABASE_URL = NEO4J_DATABASE_URL
 # break
 
 a: AwesomeList | None = AwesomeList.nodes.get_or_none(url="https://github.com/tauri-apps/awesome-tauri")
-print(a.repos.all())
+print(a.reposInAwesomeList.all())
 # print(all_awesome_lists())
