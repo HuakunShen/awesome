@@ -62,6 +62,7 @@ class BaseRepo:
     license = StringProperty()
     licenseInfo = JSONProperty()
     openIssuesCount = IntegerProperty()
+    closeIssuesCount = IntegerProperty()
     pullRequestsCount = IntegerProperty()
     releasesCount = IntegerProperty()
     repoPushedAt = CustomDateTimeProperty()

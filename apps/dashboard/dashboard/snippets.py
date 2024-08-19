@@ -70,6 +70,7 @@ def render_awesome_list_repos(awesome_lists: list[dict]) -> pd.DataFrame:
     data = []
     for option in awesome_lists:
         for repo in dao.get_awesome_list_repos(option["url"]):
+            total_issue_count = repo.openIssuesCount + repo.closeIssuesCount
             data.append(
                 {
                     "Name": repo.name,
@@ -79,12 +80,18 @@ def render_awesome_list_repos(awesome_lists: list[dict]) -> pd.DataFrame:
                     "Description": repo.description,
                     "URL": repo.url,
                     "Missing": repo.missing,
+                    "Open Issues Count": repo.openIssuesCount,
+                    "Close Issues Count": repo.closeIssuesCount,
+                    "Issue Close Rate": (
+                        round(repo.closeIssuesCount / total_issue_count, 2)
+                        if total_issue_count != 0
+                        else "N/A"
+                    ),
+                    "License": repo.license,
                     "Disk Usage": repo.diskUsage,
                     "Fork Count": repo.forkCount,
                     "Has Sponsorships Enabled": repo.hasSponsorshipsEnabled,
                     "Homepage Url": repo.homepageUrl,
-                    "License": repo.license,
-                    "Open Issues Count": repo.openIssuesCount,
                     "Pull Requests Count": repo.pullRequestsCount,
                     "Releases Count": repo.releasesCount,
                     "Last Pushed At": repo.repoPushedAt,
@@ -97,7 +104,7 @@ def render_awesome_list_repos(awesome_lists: list[dict]) -> pd.DataFrame:
     if not data:
         st.stop()
     repos_df = pd.DataFrame(data)
-    repos_df.sort_values(by="Stars", ascending=False, inplace=True)
+    repos_df.sort_values(by=["Stars", "Issue Close Rate"], ascending=False, inplace=True)
     repos_df.reset_index(drop=True, inplace=True)
     # repos_df["Star History"] = "/Repo_Star_History?repo_url=" + repos_df["URL"]
     st.dataframe(

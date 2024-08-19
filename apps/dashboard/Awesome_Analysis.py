@@ -29,6 +29,9 @@ There are a bunch of awesome lists for each topic on GitHub collecting these pro
 However, the quality of these lists and projects can vary. It's hard to find the best ones without opening each one of them.
 This website is indexed the top awesome lists and their projects to help you find the best ones in a breeze.
 
+You can sort projects by stars, forks, PRs, issue close rate and more. 
+You can also check the star history of a project to see if it's still actively maintained.
+
 This project is open sourced at https://github.com/HuakunShen/awesome.
 If you find a missing topic and would like the awesome list to be indexed, please open an issue at the GitHub repository.
 """
