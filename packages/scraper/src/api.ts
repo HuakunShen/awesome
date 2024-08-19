@@ -103,7 +103,9 @@ export const constructBatchGitHubRepoQuery = (repos: Repo[]) => {
  * @param repos
  * @returns
  */
-export async function getGitHubRepoMetadataInBatch(repos: Repo[]): Promise<RepoMetadata[]> {
+export async function getGitHubRepoMetadataInBatch(
+	repos: Repo[]
+): Promise<RepositoryQuery["repository"][]> {
 	const batchQuery = constructBatchGitHubRepoQuery(repos)
 	const client = getGitHubApiApolloClient()
 	const res = await client.query<Record<string, RepositoryQuery["repository"]>>({
@@ -114,8 +116,9 @@ export async function getGitHubRepoMetadataInBatch(repos: Repo[]): Promise<RepoM
 	if (!res.data) {
 		throw new Error("Failed to fetch metadata")
 	}
-	const reposData = Object.entries(res.data).map(([key, value]) => RepoMetadata.parse(value))
-	return reposData
+	return Object.values(res.data)
+	// const reposData = Object.entries(res.data).map(([key, value]) => RepoMetadata.parse(value))
+	// return reposData
 }
 
 export const constructBatchGitHubRepoReadmeQuery = (repos: Repo[]) => {

@@ -37,7 +37,7 @@ program
 			if (opts.newAwesomeList) {
 				await refreshNewAwesomeList()
 			} else if (opts.awesomeListRepos) {
-				await refreshAwesomeListRepos()
+				await refreshAwesomeListRepos({ batch: opts.batch })
 			} else if (opts.outdatedRepos) {
 				await refreshOutDatedRepoData({ batch: opts.batch })
 			} else if (opts.draftRepos) {

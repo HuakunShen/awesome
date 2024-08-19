@@ -12,18 +12,6 @@ import { parseOwnerAndRepoFromGithubUrl } from "./parser"
 import { getGithubRepoMetadataUrl, getGithubRepoToReadmeUrl, getGithubRepoUrl } from "./url"
 
 export async function fetchGitHubRepoReadme(owner: string, repo: string): Promise<string> {
-	// console.log(`fetching readme for ${owner}/${repo}`);
-
-	// const sdk = getGitHubGraphqlSdk()
-	// const readmeRes = await sdk.RepoReadme({ owner, name: repo })
-	// try {
-	// 	const readme = (readmeRes.data.repository?.object as { text: string }).text
-	// 	return readme
-	// } catch (error) {
-	// 	console.log(error)
-	// 	console.log(readmeRes.data.repository?.object)
-	// 	return ""
-	// }
 	// !object(expression: "HEAD:README.md") { in GitHub Gql Query doesn't seem to work for some repos, got null
 	const rawRes = await fetch(getGithubRepoToReadmeUrl(owner, repo), {
 		headers: {
@@ -78,25 +66,6 @@ export async function findAwesomeRepos(options?: { minStars?: number; recentMont
 			}
 		})
 		.then((res) => res.data.repos.sort((a, b) => b.stars - a.stars))
-	// return db.client.repo.findMany({
-	// 	select: {
-	// 		id: true,
-	// 		stars: true,
-	// 		url: true,
-	// 		name: true,
-	// 		createdAt: true,
-	// 		updatedAt: true,
-	// 		repoCreatedAt: true
-	// 	},
-	// 	where: {
-	// 		stars: { gte: minStars },
-	// 		name: { contains: "awesome-", mode: "insensitive" },
-	// 		repoUpdatedAt: { gte: new Date(new Date().setMonth(new Date().getMonth() - recentMonths)) }
-	// 	},
-	// 	orderBy: {
-	// 		stars: "desc"
-	// 	}
-	// })
 }
 
 /**
@@ -105,15 +74,26 @@ export async function findAwesomeRepos(options?: { minStars?: number; recentMont
  * @param githubRepoUrl
  */
 export async function indexGitHubRepo(githubRepoUrl: string, awesomeListId?: string) {
-	console.log(`Indexing GitHub Repo: ${githubRepoUrl}`)
 	const parse = parseOwnerAndRepoFromGithubUrl(githubRepoUrl)
 	if (!parse) {
 		return
 	}
 	const { owner, name: repoName } = parse
+	const cleanGitHubRepoUrl = getGithubRepoUrl(owner, repoName)
+	console.log(`Indexing GitHub Repo: ${cleanGitHubRepoUrl}; Original URL: ${githubRepoUrl}`)
 
 	const repoMetadata = await fetchGitHubRepoMetadata(owner, repoName)
 	// dbRepo could be undefined if no repo is found
+	await addRepoToDB(cleanGitHubRepoUrl, owner, repoName, awesomeListId, repoMetadata)
+}
+
+async function addRepoToDB(
+	githubRepoUrl: string,
+	owner: string,
+	repoName: string,
+	awesomeListId?: string,
+	repoMetadata?: RepositoryQuery["repository"] | null
+) {
 	const dbRepos = (
 		await neo4jSdk.Repos({
 			where: {
@@ -238,33 +218,37 @@ export async function indexGitHubRepo(githubRepoUrl: string, awesomeListId?: str
  * !Watch out of Non-Existing Repo, it will fail the entire batch GraphQL query, only use this function on existing repos
  * @param githubRepoUrls
  */
-export async function batchIndexGitHubRepos(repos: Repo[]): Promise<string[]> {
-	// let reposMetadata: RepoMetadata[] = []
-	// try {
-	// 	reposMetadata = await getGitHubRepoMetadataInBatch(repos)
-	// } catch (error) {
-	// 	console.log(error)
-	// 	return []
-	// }
+export async function batchIndexGitHubRepos(
+	repos: Repo[],
+	awesomeListId?: string
+): Promise<string[]> {
+	let reposMetadata: RepositoryQuery["repository"][] = []
+	try {
+		reposMetadata = await getGitHubRepoMetadataInBatch(repos)
+	} catch (error) {
+		console.log(error)
+		return []
+	}
 	const indexedRepoUrls: string[] = []
-	// for (const [idx, repoMetadata] of reposMetadata.entries()) {
-	// 	if (!repoMetadata) {
-	// 		const repo = repos[idx] // repos and reposMetadata should have the same order
-	// 		const repoUrl = getGithubRepoMetadataUrl(repo.owner, repo.name)
-	// 		console.warn(`Failed to fetch metadata for ${repoUrl}`)
-	// 		// await db.upsertRepo(githubRepoMetadataToDBRepo(repoMetadata))
-	// 		await db.upsertRepo({
-	// 			url: getGithubRepoUrl(repo.owner, repo.name),
-	// 			owner: repo.owner,
-	// 			name: repo.name,
-	// 			missing: true
-	// 		})
-	// 		indexedRepoUrls.push(getGithubRepoUrl(repo.owner, repo.name))
-	// 	} else {
-	// 		await db.upsertRepo(githubRepoMetadataToDBRepo(repoMetadata))
-	// 		indexedRepoUrls.push(getGithubRepoUrl(repoMetadata.owner.login, repoMetadata.name))
-	// 	}
-	// }
+	for (const [idx, repoMetadata] of reposMetadata.entries()) {
+		if (!repoMetadata) {
+			const repo = repos[idx] // repos and reposMetadata should have the same order
+			const repoUrl = getGithubRepoMetadataUrl(repo.owner, repo.name)
+			console.warn(`Failed to fetch metadata for ${repoUrl}`)
+			indexedRepoUrls.push(getGithubRepoUrl(repo.owner, repo.name))
+			await addRepoToDB(repoUrl, repo.owner, repo.name, awesomeListId, repoMetadata)
+		} else {
+			// await db.upsertRepo(githubRepoMetadataToDBRepo(repoMetadata))
+			await addRepoToDB(
+				repoMetadata.url,
+				repoMetadata.owner.login,
+				repoMetadata.name,
+				awesomeListId,
+				repoMetadata
+			)
+			indexedRepoUrls.push(getGithubRepoUrl(repoMetadata.owner.login, repoMetadata.name))
+		}
+	}
 	return indexedRepoUrls
 }
 

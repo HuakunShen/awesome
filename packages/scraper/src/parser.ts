@@ -29,7 +29,3 @@ export function parseOwnerAndRepoFromGithubUrl(url: string): Repo | null {
 	}
 	return null
 }
-
-export function constructGitHubRepoUrl(owner: string, repo: string) {
-	return `https://github.com/${owner}/${repo}`
-}

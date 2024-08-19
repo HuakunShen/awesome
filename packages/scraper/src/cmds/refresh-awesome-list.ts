@@ -4,17 +4,14 @@ import { CACHE_INVALIDATION_TIME, DAY_MS, GitHubRepoUrlRegex } from "@/constant"
 import { neo4jSdk } from "@/db"
 import { logger } from "@/logger"
 import { githubRepoMetadataToDBRepo } from "@/model"
+import { parseMarkdownLinks, parseOwnerAndRepoFromGithubUrl } from "@/parser"
 import {
-	constructGitHubRepoUrl,
-	parseMarkdownLinks,
-	parseOwnerAndRepoFromGithubUrl
-} from "@/parser"
-import { fetchGitHubRepoReadme, indexGitHubRepo } from "@/scraper"
+	batchIndexGitHubReposWithBatchSize,
+	fetchGitHubRepoReadme,
+	indexGitHubRepo
+} from "@/scraper"
 import { getGithubRepoUrl } from "@/url"
-import { isOutDated } from "@/utils"
-import chalk from "chalk"
 import cliProgress from "cli-progress"
-// import { db } from "db"
 import type { Repo, RepoMetadata } from "types"
 
 /**
@@ -69,8 +66,8 @@ export async function refreshNewAwesomeList() {
  * Don't worry about repo data here, if repo doesn't exist, set `draft` to true
  * Repo data will be refreshed in another command
  */
-export async function refreshAwesomeListRepos() {
-	const thresholdDate = new Date(Date.now() - 0) // for dev only, force refresh all
+export async function refreshAwesomeListRepos(options: { batch?: boolean } = {}) {
+	const thresholdDate = new Date(Date.now() - 0) // ! for dev only, force refresh all
 	// const thresholdDate = new Date(Date.now() - CACHE_INVALIDATION_TIME)
 	const outdatedAwesomeLists = (
 		await neo4jSdk.AwesomeLists({
@@ -99,15 +96,20 @@ export async function refreshAwesomeListRepos() {
 		const githubReposInAwesomeReadme = markdownLinks.filter((link) =>
 			link.url.match(GitHubRepoUrlRegex)
 		)
-		for (const repo of githubReposInAwesomeReadme) {
-			const parse = parseOwnerAndRepoFromGithubUrl(repo.url)
-			if (!parse) {
-				continue
-			}
-			const { owner, name: repoName } = parse
-			const url = constructGitHubRepoUrl(owner, repoName)
-			if (!allReposUrls.has(url)) {
-				await indexGitHubRepo(url, awesomeList.id) // this will auto connect with awesome list when id is provided
+		if (options.batch) {
+			console.log(
+				`Batch Indexing ${githubReposInAwesomeReadme.length} repos for ${awesomeList.name}`
+			)
+			const repoUrlsToIndex = githubReposInAwesomeReadme
+				.filter((repo) => !allReposUrls.has(repo.url))
+				.map((repo) => parseOwnerAndRepoFromGithubUrl(repo.url))
+				.filter((x) => x) as Repo[]
+			await batchIndexGitHubReposWithBatchSize(repoUrlsToIndex)
+		} else {
+			for (const repo of githubReposInAwesomeReadme) {
+				if (!allReposUrls.has(repo.url)) {
+					await indexGitHubRepo(repo.url, awesomeList.id) // this will auto connect with awesome list when id is provided
+				}
 			}
 		}
 		// await db.refreshAwesomeList(awesomeList.id)
