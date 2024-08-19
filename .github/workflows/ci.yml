@@ -42,6 +42,7 @@ jobs:
           NEO4J_DATABASE_URL: ${{ secrets.NEO4J_DATABASE_URL }}
 
         run: |
+          bun init-env-vars
           pnpm build
           pnpm test
       # - name: Update Data
