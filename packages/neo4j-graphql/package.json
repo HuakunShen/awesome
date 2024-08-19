@@ -28,6 +28,6 @@
 	},
 	"scripts": {
 		"codegen": "gql-gen --config codegen.ts",
-		"build": "bun run codegen"
+		"build": "bun codegen-ci.ts"
 	}
 }
