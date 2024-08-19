@@ -20,7 +20,7 @@ st.set_page_config(page_title="Star History", page_icon="🌍")
 
 
 # read from url param
-default_value = ""
+default_value = "https://github.com/sindresorhus/awesome"
 if "repo_url" in st.query_params:
     default_value = st.query_params["repo_url"]
 
@@ -37,8 +37,9 @@ repo_regex = re.compile(r"^https:\/\/github\.com\/([\w-]+)\/([\w-]+)(?:\/|#?.*)?
 match = repo_regex.match(text_input)
 if match:
     owner, repo = match.groups()
-    st.markdown(f"**Fetching star history for** `{owner}/{repo}`")
-
+    st.markdown(
+        f"**Fetching star history for** `{owner}/{repo}`. It may take a while if it's the first time this repo is being indexed. Refresh in a few minutes."
+    )
     # dates = api.fetch_star_dates(owner, repo)
     # fig = api.plot_star_history(dates)
     star_url = f"https://star-history.pockethost.io/star-history/{owner}/{repo}"

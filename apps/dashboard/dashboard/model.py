@@ -21,20 +21,34 @@ class AwesomeList(BaseModel):
 
 class Repo(BaseModel):
     id: str
-    stars: int
-    description: Optional[str]
-    missing: bool
-    created: datetime
-    updated: datetime
+    owner: str
     name: str
+    stars: int
     url: str
-    metadata: Optional[dict]
+    missing: bool
+    lastModified: datetime
+    description: Optional[str]
+    diskUsage: int
+    forkCount: int
+    hasSponsorshipsEnabled: bool
+    homepageUrl: Optional[str]
+    license: Optional[str]
+    openIssuesCount: int
+    pullRequestsCount: int
+    releasesCount: int
+    repoPushedAt: datetime
+    repoUpdatedAt: datetime
+    repoCreatedAt: datetime
+    watchersCount: datetime
+    createdAt: Optional[datetime]
 
-    def from_pb(x: PocketBaseModel):
-        return Repo.model_validate(x.__dict__)
+    # metadata: Optional[dict]
 
-    def from_list(x: list[PocketBaseModel]):
-        return [Repo.model_validate(i) for i in x]
+    # def from_pb(x: PocketBaseModel):
+    #     return Repo.model_validate(x.__dict__)
+
+    # def from_list(x: list[PocketBaseModel]):
+    #     return [Repo.model_validate(i) for i in x]
 
 
 class IsAwesome(BaseModel):
@@ -50,6 +64,7 @@ class IsAwesome(BaseModel):
 
 class AwesomeListRepo(BaseModel):
     """Awesome List Repository Info"""
+
     owner: str
     name: str
     url: str

@@ -17,7 +17,6 @@ from neomodel import config
 config.DATABASE_URL = os.getenv("NEO4J_DATABASE_URL")
 
 
-
 st.set_page_config(page_title="Awesome Lists", page_icon="📈", layout="wide")
 
 st.markdown(
@@ -26,6 +25,5 @@ st.markdown(
 This page contains a list of popular awesome lists.
 """
 )
-st.sidebar.header("Plotting Demo")
 
 snippets.render_all_awesome_list_repos_df()
