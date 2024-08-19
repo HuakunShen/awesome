@@ -174,5 +174,5 @@ dist
 # Finder (MacOS) folder config
 .DS_Store
 
-src/generated/
+# src/generated/
 github-graphql.schema.json

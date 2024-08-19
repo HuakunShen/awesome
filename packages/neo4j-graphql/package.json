@@ -27,7 +27,6 @@
 		"zod": "^3.23.8"
 	},
 	"scripts": {
-		"codegen": "gql-gen --config codegen.ts",
-		"build": "bun codegen-ci.ts"
+		"codegen": "gql-gen --config codegen.ts"
 	}
 }
