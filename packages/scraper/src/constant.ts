@@ -20,10 +20,10 @@ export const CACHE_INVALIDATION_TIME = REPO_CACHE_LIFE_DAYS * DAY_MS
 /* -------------------------------------------------------------------------- */
 /*                                    Neo4j                                   */
 /* -------------------------------------------------------------------------- */
-export const NEO4J_URI = Bun.env.NEO4J_URI!
-export const NEO4J_DATABASE_URL = Bun.env.NEO4J_DATABASE_URL!
-export const NEO4J_USERNAME = Bun.env.NEO4J_USERNAME!
-export const NEO4J_PASSWORD = Bun.env.NEO4J_PASSWORD
+export const NEO4J_URI = process.env.NEO4J_URI!
+export const NEO4J_DATABASE_URL = process.env.NEO4J_DATABASE_URL!
+export const NEO4J_USERNAME = process.env.NEO4J_USERNAME!
+export const NEO4J_PASSWORD = process.env.NEO4J_PASSWORD
 if (!NEO4J_URI) {
 	throw new Error("NEO4J_URI is required")
 }
