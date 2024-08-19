@@ -1,0 +1,46 @@
+# type Movie {
+# 	title: String
+# 	actors: [Actor!]! @relationship(type: "ACTED_IN", direction: IN)
+# }
+
+# type Actor {
+# 	name: String
+# 	movies: [Movie!]! @relationship(type: "ACTED_IN", direction: OUT)
+# }
+type AwesomeList {
+	id: ID! @id
+	lastModified: DateTime! @timestamp(operations: [CREATE, UPDATE])
+	isFromRepo: Repo! @relationship(type: "IS_FROM", direction: OUT)
+	lastRefreshTime: DateTime!
+	name: String!
+	reposInAwesomeList: [Repo!]! @relationship(type: "IN_AWESOME_LIST", direction: IN)
+	tags: [String]!
+	url: String! @unique
+}
+
+type Repo {
+	id: ID! @id
+	lastModified: DateTime! @timestamp(operations: [CREATE, UPDATE])
+	description: String
+	diskUsage: Int
+	forkCount: Int!
+	hasSponsorshipsEnabled: Boolean!
+	homepageUrl: String
+	license: String
+	licenseInfo: String
+	missing: Boolean!
+	name: String!
+	openIssuesCount: Int!
+	closeIssuesCount: Int!
+	owner: String!
+	pullRequestsCount: Int!
+	releasesCount: Int!
+	repoCreatedAt: DateTime!
+	repoPushedAt: DateTime!
+	repoUpdatedAt: DateTime!
+	stars: Int!
+	url: String! @unique
+	watchersCount: Int!
+	awesomeListsIsFrom: AwesomeList @relationship(type: "IS_FROM", direction: IN)
+	inAwesomeListAwesomeLists: [AwesomeList!]! @relationship(type: "IN_AWESOME_LIST", direction: OUT)
+}

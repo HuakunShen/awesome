@@ -1,5 +1,4 @@
-import { type Prisma } from "@prisma/client"
-import { githubGraphql } from "github-graphql"
+import type { RepositoryQuery } from "@hk/github-graphql"
 import type { RepoMetadata } from "types"
 
 /**
@@ -8,8 +7,8 @@ import type { RepoMetadata } from "types"
  * @returns
  */
 export function githubRepoMetadataToDBRepo(
-	repoMetadata: githubGraphql.RepositoryQuery["repository"] | RepoMetadata
-): Prisma.RepoCreateInput {
+	repoMetadata: RepositoryQuery["repository"] | RepoMetadata
+) {
 	repoMetadata = repoMetadata!
 	return {
 		owner: repoMetadata.owner.login,
@@ -31,6 +30,8 @@ export function githubRepoMetadataToDBRepo(
 				}
 			: null,
 		openIssuesCount: repoMetadata.openIssues.totalCount,
+		// repoMetadata.closeIssuesCount
+		closeIssuesCount: repoMetadata.closedIssues.totalCount,
 		pullRequestsCount: repoMetadata.pullRequests.totalCount,
 		releasesCount: repoMetadata.releases.totalCount,
 		repoPushedAt: repoMetadata.pushedAt,

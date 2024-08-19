@@ -1,0 +1,20 @@
+mutation CreateRepos($input: [RepoCreateInput!]!) {
+	createRepos(input: $input) {
+		repos {
+			url
+			name
+			owner
+			stars
+			forkCount
+			description
+			diskUsage
+			forkCount
+			closeIssuesCount
+			homepageUrl
+			hasSponsorshipsEnabled
+			lastModified
+			license
+			missing
+		}
+	}
+}

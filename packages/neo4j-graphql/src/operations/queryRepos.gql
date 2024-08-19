@@ -1,0 +1,12 @@
+query Repos($where: RepoWhere, $options: RepoOptions) {
+	repos(where: $where, options: $options) {
+		diskUsage
+		name
+		url
+		owner
+		id
+		stars
+		lastModified
+		repoCreatedAt
+	}
+}

@@ -1,0 +1,10 @@
+mutation CreateAwesomeLists($input: [AwesomeListCreateInput!]!) {
+	createAwesomeLists(input: $input) {
+		awesomeLists {
+			lastRefreshTime
+			name
+			tags
+			url
+		}
+	}
+}

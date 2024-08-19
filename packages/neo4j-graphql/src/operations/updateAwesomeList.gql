@@ -1,0 +1,28 @@
+mutation UpdateAwesomeLists(
+	$where: AwesomeListWhere
+	$update: AwesomeListUpdateInput
+	$connect: AwesomeListConnectInput
+	$disconnect: AwesomeListDisconnectInput
+	$create: AwesomeListRelationInput
+	$delete: AwesomeListDeleteInput
+	$connectOrCreate: AwesomeListConnectOrCreateInput
+) {
+	updateAwesomeLists(
+		where: $where
+		update: $update
+		connect: $connect
+		disconnect: $disconnect
+		create: $create
+		delete: $delete
+		connectOrCreate: $connectOrCreate
+	) {
+		awesomeLists {
+			lastRefreshTime
+			name
+			tags
+			url
+			id
+			lastModified
+		}
+	}
+}

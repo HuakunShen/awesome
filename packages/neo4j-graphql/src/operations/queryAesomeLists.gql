@@ -1,0 +1,10 @@
+query AwesomeLists($where: AwesomeListWhere) {
+	awesomeLists(where: $where) {
+		lastModified
+		lastRefreshTime
+		name
+		url
+		tags
+		id
+	}
+}

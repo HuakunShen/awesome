@@ -1,0 +1,28 @@
+mutation UpdateRepos(
+	$connect: RepoConnectInput
+	$where: RepoWhere
+	$update: RepoUpdateInput
+	$create: RepoRelationInput
+	$connectOrCreate: RepoConnectOrCreateInput
+	$delete: RepoDeleteInput
+	$disconnect: RepoDisconnectInput
+) {
+	updateRepos(
+		connect: $connect
+		where: $where
+		update: $update
+		create: $create
+		connectOrCreate: $connectOrCreate
+		delete: $delete
+		disconnect: $disconnect
+	) {
+		info {
+			relationshipsCreated
+			relationshipsDeleted
+		}
+		repos {
+			url
+			stars
+		}
+	}
+}

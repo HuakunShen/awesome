@@ -1,6 +1,7 @@
 import { githubAwesomeList } from "@/../data/awesome-list"
 import { fetchGitHubApiRateLimit, getGitHubGraphqlSdk, getGitHubRepoMetadataInBatch } from "@/api"
 import { CACHE_INVALIDATION_TIME, DAY_MS, GitHubRepoUrlRegex } from "@/constant"
+import { neo4jSdk } from "@/db"
 import { logger } from "@/logger"
 import { githubRepoMetadataToDBRepo } from "@/model"
 import {
@@ -13,7 +14,7 @@ import { getGithubRepoUrl } from "@/url"
 import { isOutDated } from "@/utils"
 import chalk from "chalk"
 import cliProgress from "cli-progress"
-import { db } from "db"
+// import { db } from "db"
 import type { Repo, RepoMetadata } from "types"
 
 /**
@@ -21,8 +22,8 @@ import type { Repo, RepoMetadata } from "types"
  */
 export async function refreshNewAwesomeList() {
 	logger.info(`Refresh Awesome List: Add new Awesome List and Draft Repos`)
-	let allLists = await db.getAllAwesomeLists()
-	const existingListUrls = allLists.map((list) => list.url)
+	let allLists = await neo4jSdk.AwesomeLists()
+	const existingListUrls = allLists.data.awesomeLists.map((list) => list.url)
 	const awesomeReposUrlsNotInDb = new Set(
 		githubAwesomeList
 			.filter((repo) => !existingListUrls.includes(getGithubRepoUrl(repo.owner, repo.name)))
@@ -41,11 +42,24 @@ export async function refreshNewAwesomeList() {
 			continue
 		}
 		const repoUrl = getGithubRepoUrl(parse.owner, parse.name)
-		await db.createAwesomeList({
-			name: parse.name,
-			url: repoUrl
+		await indexGitHubRepo(repoUrl) // index the awesome list repo, so the next step can find the repo to connect
+		await neo4jSdk.CreateAwesomeLists({
+			input: {
+				name: parse.name,
+				url: repoUrl,
+				lastRefreshTime: new Date(0), // set to 0 because not yet refreshed when created so it will be refreshed in the other command
+				tags: [],
+				isFromRepo: {
+					connect: {
+						where: {
+							node: {
+								url: repoUrl
+							}
+						}
+					}
+				}
+			}
 		})
-		await indexGitHubRepo(repoUrl) // index the awesome list repo
 	}
 	pbar.stop()
 }
@@ -56,11 +70,20 @@ export async function refreshNewAwesomeList() {
  * Repo data will be refreshed in another command
  */
 export async function refreshAwesomeListRepos() {
-	const thresholdDate = new Date(Date.now() - CACHE_INVALIDATION_TIME)
-	const outdatedAwesomeLists = await db.getOutdatedAwesomeLists(thresholdDate)
+	const thresholdDate = new Date(Date.now() - 0) // for dev only, force refresh all
+	// const thresholdDate = new Date(Date.now() - CACHE_INVALIDATION_TIME)
+	const outdatedAwesomeLists = (
+		await neo4jSdk.AwesomeLists({
+			where: {
+				lastRefreshTime_LT: thresholdDate
+			}
+		})
+	).data.awesomeLists
 	const pbar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
+	logger.info(`Refreshing ${outdatedAwesomeLists.length} outdated awesome lists`)
 	pbar.start(outdatedAwesomeLists.length, 0)
-	const allRepos = await db.client.repo.findMany({ select: { url: true } })
+	// const allRepos = await db.client.repo.findMany({ select: { url: true } })
+	const allRepos = (await neo4jSdk.Repos()).data.repos
 	const allReposUrls = new Set(allRepos.map((repo) => repo.url))
 	for (const awesomeList of outdatedAwesomeLists) {
 		pbar.increment()
@@ -84,13 +107,18 @@ export async function refreshAwesomeListRepos() {
 			const { owner, name: repoName } = parse
 			const url = constructGitHubRepoUrl(owner, repoName)
 			if (!allReposUrls.has(url)) {
-				// index new repo, add to candidate repo collection
-				await db.createCandidateRepo({
-					url
-				})
+				await indexGitHubRepo(url, awesomeList.id) // this will auto connect with awesome list when id is provided
 			}
 		}
-		await db.refreshAwesomeList(awesomeList.id)
+		// await db.refreshAwesomeList(awesomeList.id)
+		await neo4jSdk.UpdateAwesomeLists({
+			where: {
+				id: awesomeList.id
+			},
+			update: {
+				lastRefreshTime: new Date()
+			}
+		})
 	}
 	pbar.stop()
 	logger.info(`Refresh Awesome List: Add new Awesome List and Draft Repos`)

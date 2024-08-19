@@ -23,6 +23,7 @@ const targetPkgPaths = [
 	"packages/scraper",
 	"packages/db",
 	"packages/neo4jdb",
+	"packages/neo4j-graphql",
 	"apps/dashboard"
 ]
 const rootEnv = Bun.file(".env")

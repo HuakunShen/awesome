@@ -10,7 +10,6 @@ import { fetchGitHubRepoReadme } from "@/scraper"
 import { getGithubRepoUrl } from "@/url"
 import chalk from "chalk"
 import cliProgress from "cli-progress"
-import { db } from "db"
 
 /**
  * Refresh relationships between awesome list and repos

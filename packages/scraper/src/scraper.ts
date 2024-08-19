@@ -1,10 +1,11 @@
+import { SortDirection } from "@awesome/neo4j-graphql"
+import { getSdk, type RepositoryQuery } from "@hk/github-graphql/req"
 import cliProgress from "cli-progress"
-import { db } from "db"
-import { githubGraphql } from "github-graphql"
-import { getSdk, type RepositoryQuery } from "github-graphql/req"
 import { GraphQLClient } from "graphql-request"
 import type { Repo, RepoMetadata } from "types"
 import { getGitHubGraphqlSdk, getGitHubRepoMetadataInBatch } from "./api"
+import { CACHE_INVALIDATION_TIME } from "./constant"
+import { neo4jSdk } from "./db"
 import { logger } from "./logger"
 import { githubRepoMetadataToDBRepo } from "./model"
 import { parseOwnerAndRepoFromGithubUrl } from "./parser"
@@ -38,7 +39,7 @@ export async function fetchGitHubRepoReadme(owner: string, repo: string): Promis
 export async function fetchGitHubRepoMetadata(
 	owner: string,
 	repo: string
-): Promise<githubGraphql.RepositoryQuery["repository"] | null> {
+): Promise<RepositoryQuery["repository"] | null> {
 	const sdk = getGitHubGraphqlSdk()
 	return sdk
 		.Repository({
@@ -61,26 +62,41 @@ export async function findAwesomeRepos(options?: { minStars?: number; recentMont
 	const minStars = options.minStars ?? 100
 	const recentMonths = options.recentMonths ?? 2
 	console.log("recentMonths", recentMonths)
-
-	return db.client.repo.findMany({
-		select: {
-			id: true,
-			stars: true,
-			url: true,
-			name: true,
-			createdAt: true,
-			updatedAt: true,
-			repoCreatedAt: true
-		},
-		where: {
-			stars: { gte: minStars },
-			name: { contains: "awesome-", mode: "insensitive" },
-			repoUpdatedAt: { gte: new Date(new Date().setMonth(new Date().getMonth() - recentMonths)) }
-		},
-		orderBy: {
-			stars: "desc"
-		}
-	})
+	return neo4jSdk
+		.Repos({
+			where: {
+				stars_GTE: minStars,
+				name_CONTAINS: "awesome-",
+				repoUpdatedAt_GTE: new Date(new Date().setMonth(new Date().getMonth() - recentMonths))
+			},
+			options: {
+				sort: [
+					{
+						stars: SortDirection.Desc
+					}
+				]
+			}
+		})
+		.then((res) => res.data.repos.sort((a, b) => b.stars - a.stars))
+	// return db.client.repo.findMany({
+	// 	select: {
+	// 		id: true,
+	// 		stars: true,
+	// 		url: true,
+	// 		name: true,
+	// 		createdAt: true,
+	// 		updatedAt: true,
+	// 		repoCreatedAt: true
+	// 	},
+	// 	where: {
+	// 		stars: { gte: minStars },
+	// 		name: { contains: "awesome-", mode: "insensitive" },
+	// 		repoUpdatedAt: { gte: new Date(new Date().setMonth(new Date().getMonth() - recentMonths)) }
+	// 	},
+	// 	orderBy: {
+	// 		stars: "desc"
+	// 	}
+	// })
 }
 
 /**
@@ -88,7 +104,8 @@ export async function findAwesomeRepos(options?: { minStars?: number; recentMont
  * `draft` field will always update to `false` because after indexing, it's no longer draft
  * @param githubRepoUrl
  */
-export async function indexGitHubRepo(githubRepoUrl: string) {
+export async function indexGitHubRepo(githubRepoUrl: string, awesomeListId?: string) {
+	console.log(`Indexing GitHub Repo: ${githubRepoUrl}`)
 	const parse = parseOwnerAndRepoFromGithubUrl(githubRepoUrl)
 	if (!parse) {
 		return
@@ -96,17 +113,121 @@ export async function indexGitHubRepo(githubRepoUrl: string) {
 	const { owner, name: repoName } = parse
 
 	const repoMetadata = await fetchGitHubRepoMetadata(owner, repoName)
+	// dbRepo could be undefined if no repo is found
+	const dbRepos = (
+		await neo4jSdk.Repos({
+			where: {
+				url: githubRepoUrl
+			}
+		})
+	).data.repos
+	const dbRepo = dbRepos.at(0)
+	const thresholdDate = new Date(Date.now() - CACHE_INVALIDATION_TIME)
+	if (dbRepo && dbRepo.lastModified > thresholdDate) {
+		console.log(`Repo ${githubRepoUrl} is up to date; skipping`)
+		return
+	}
+	const connectAwesomeListPayload = awesomeListId
+		? {
+				inAwesomeListAwesomeLists: [
+					{
+						where: {
+							node: {
+								id: awesomeListId
+							}
+						}
+					}
+				]
+			}
+		: undefined
 	if (!repoMetadata) {
 		console.warn(`Failed to fetch metadata for ${githubRepoUrl}`)
 		// await db.upsertRepo(githubRepoMetadataToDBRepo(repoMetadata))
-		return await db.upsertRepo({
-			url: getGithubRepoUrl(owner, repoName),
-			owner,
-			name: repoName,
-			missing: true
-		})
+		// await neo4jSdk.UpdateRepos({
+		// 	update: {
+		// 		missing: true
+		// 	},
+		// 	where: {
+		// 		url: githubRepoUrl
+		// 	}
+		// })
+		if (dbRepo) {
+			// update
+			await neo4jSdk.UpdateRepos({
+				where: {
+					url: githubRepoUrl
+				},
+				update: {
+					missing: true
+				},
+				connect: connectAwesomeListPayload
+			})
+		} else {
+			// create
+			await neo4jSdk.CreateRepos({
+				input: {
+					owner,
+					name: repoName,
+					url: githubRepoUrl,
+					missing: true,
+					stars: 10,
+					diskUsage: 0,
+					forkCount: 0,
+					hasSponsorshipsEnabled: false,
+					homepageUrl: "",
+					// licenseInfo:
+					openIssuesCount: 0,
+					closeIssuesCount: 0,
+					pullRequestsCount: 0,
+					releasesCount: 0,
+					repoPushedAt: new Date(),
+					repoUpdatedAt: new Date(),
+					repoCreatedAt: new Date(),
+					watchersCount: 0,
+					inAwesomeListAwesomeLists: {
+						connect: [{ where: { node: { id: awesomeListId } } }]
+					}
+				}
+			})
+		}
 	} else {
-		await db.upsertRepo({ ...githubRepoMetadataToDBRepo(repoMetadata), missing: false })
+		const newData = {
+			name: repoName,
+			owner,
+			url: githubRepoUrl,
+			stars: repoMetadata.stargazerCount,
+			diskUsage: repoMetadata.diskUsage ?? 0,
+			forkCount: repoMetadata.forkCount,
+			hasSponsorshipsEnabled: repoMetadata.hasSponsorshipsEnabled,
+			homepageUrl: repoMetadata.homepageUrl,
+			openIssuesCount: repoMetadata.openIssues.totalCount,
+			closeIssuesCount: repoMetadata.closedIssues.totalCount,
+			pullRequestsCount: repoMetadata.pullRequests.totalCount,
+			releasesCount: repoMetadata.releases.totalCount,
+			repoPushedAt: repoMetadata.pushedAt,
+			repoUpdatedAt: repoMetadata.updatedAt,
+			repoCreatedAt: repoMetadata.createdAt,
+			watchersCount: repoMetadata.watchers.totalCount,
+			missing: false
+		}
+		if (dbRepo) {
+			await neo4jSdk.UpdateRepos({
+				where: {
+					url: githubRepoUrl
+				},
+				update: newData,
+				connect: connectAwesomeListPayload
+			})
+		} else {
+			await neo4jSdk.CreateRepos({
+				input: {
+					...newData,
+					inAwesomeListAwesomeLists: {
+						connect: [{ where: { node: { id: awesomeListId } } }]
+					}
+				}
+			})
+		}
 	}
 }
 
@@ -118,32 +239,32 @@ export async function indexGitHubRepo(githubRepoUrl: string) {
  * @param githubRepoUrls
  */
 export async function batchIndexGitHubRepos(repos: Repo[]): Promise<string[]> {
-	let reposMetadata: RepoMetadata[] = []
-	try {
-		reposMetadata = await getGitHubRepoMetadataInBatch(repos)
-	} catch (error) {
-		console.log(error)
-		return []
-	}
-	const indexedRepoUrls = []
-	for (const [idx, repoMetadata] of reposMetadata.entries()) {
-		if (!repoMetadata) {
-			const repo = repos[idx] // repos and reposMetadata should have the same order
-			const repoUrl = getGithubRepoMetadataUrl(repo.owner, repo.name)
-			console.warn(`Failed to fetch metadata for ${repoUrl}`)
-			// await db.upsertRepo(githubRepoMetadataToDBRepo(repoMetadata))
-			await db.upsertRepo({
-				url: getGithubRepoUrl(repo.owner, repo.name),
-				owner: repo.owner,
-				name: repo.name,
-				missing: true
-			})
-			indexedRepoUrls.push(getGithubRepoUrl(repo.owner, repo.name))
-		} else {
-			await db.upsertRepo(githubRepoMetadataToDBRepo(repoMetadata))
-			indexedRepoUrls.push(getGithubRepoUrl(repoMetadata.owner.login, repoMetadata.name))
-		}
-	}
+	// let reposMetadata: RepoMetadata[] = []
+	// try {
+	// 	reposMetadata = await getGitHubRepoMetadataInBatch(repos)
+	// } catch (error) {
+	// 	console.log(error)
+	// 	return []
+	// }
+	const indexedRepoUrls: string[] = []
+	// for (const [idx, repoMetadata] of reposMetadata.entries()) {
+	// 	if (!repoMetadata) {
+	// 		const repo = repos[idx] // repos and reposMetadata should have the same order
+	// 		const repoUrl = getGithubRepoMetadataUrl(repo.owner, repo.name)
+	// 		console.warn(`Failed to fetch metadata for ${repoUrl}`)
+	// 		// await db.upsertRepo(githubRepoMetadataToDBRepo(repoMetadata))
+	// 		await db.upsertRepo({
+	// 			url: getGithubRepoUrl(repo.owner, repo.name),
+	// 			owner: repo.owner,
+	// 			name: repo.name,
+	// 			missing: true
+	// 		})
+	// 		indexedRepoUrls.push(getGithubRepoUrl(repo.owner, repo.name))
+	// 	} else {
+	// 		await db.upsertRepo(githubRepoMetadataToDBRepo(repoMetadata))
+	// 		indexedRepoUrls.push(getGithubRepoUrl(repoMetadata.owner.login, repoMetadata.name))
+	// 	}
+	// }
 	return indexedRepoUrls
 }
 

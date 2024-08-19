@@ -1,0 +1,12 @@
+mutation connectRepo($connect: RepoConnectInput) {
+	updateRepos(connect: $connect) {
+		info {
+			relationshipsCreated
+			relationshipsDeleted
+		}
+		repos {
+			url
+			stars
+		}
+	}
+}
