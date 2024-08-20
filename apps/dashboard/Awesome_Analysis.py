@@ -13,13 +13,12 @@ from neomodel import config
 
 config.DATABASE_URL = os.getenv("NEO4J_DATABASE_URL")
 
-
 st.set_page_config(
     page_title="Awesome",
 )
 
 st.write("# Find Awesome Projects")
-
+st.image("https://profile-counter.glitch.me/awesome.huakun.tech/count.svg")
 st.write(
     """
 There are plenty of awesome projects out there. 
