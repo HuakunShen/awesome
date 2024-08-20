@@ -12,6 +12,7 @@ import {
 } from "@/scraper"
 import { getGithubRepoUrl } from "@/url"
 import cliProgress from "cli-progress"
+import PQueue from "p-queue"
 import type { Repo, RepoMetadata } from "types"
 
 /**
@@ -106,9 +107,12 @@ export async function refreshAwesomeListRepos(options: { batch?: boolean } = {})
 				.filter((x) => x) as Repo[]
 			await batchIndexGitHubReposWithBatchSize(repoUrlsToIndex)
 		} else {
+			const queue = new PQueue({ concurrency: 7 })
 			for (const repo of githubReposInAwesomeReadme) {
 				if (!allReposUrls.has(repo.url)) {
-					await indexGitHubRepo(repo.url, awesomeList.id) // this will auto connect with awesome list when id is provided
+					queue.add(
+						() => indexGitHubRepo(repo.url, awesomeList.id) // this will auto connect with awesome list when id is provided
+					)
 				}
 			}
 		}

@@ -27,6 +27,8 @@
 		"zod": "^3.23.8"
 	},
 	"scripts": {
-		"codegen": "gql-gen --config codegen.ts"
+		"codegen": "gql-gen --config codegen.ts",
+		"start": "node server.js",
+		"dev": "node server.js"
 	}
 }

@@ -4,6 +4,7 @@ import { neo4jSdk } from "@/db"
 import { parseOwnerAndRepoFromGithubUrl } from "@/parser"
 import { batchIndexGitHubReposWithBatchSize, indexGitHubRepo } from "@/scraper"
 import cliProgress from "cli-progress"
+import PQueue from "p-queue"
 import type { Repo } from "types"
 
 /**
@@ -12,34 +13,41 @@ import type { Repo } from "types"
 export async function refreshOutDatedRepoData(options: { batch?: boolean } = {}) {
 	const githubRateLimit = await fetchGitHubApiRateLimit()
 	const thresholdDate = new Date(Date.now() - CACHE_INVALIDATION_TIME)
-	// let outdatedRepos = await db.getOutdatedRepos(thresholdDate)
 	let outdatedRepos = (
 		await neo4jSdk.Repos({
 			where: {
-				lastModified_LT: thresholdDate
+				lastModified_LT: thresholdDate,
+				missing: false, // ignore missing repos so we can send batch repo query to github and not worry about failure
+				// description: null // TODO: remove this when we have a better way to handle missing description
 			}
 		})
 	).data.repos
 	// let outdatedRepos = await awesomeRepoDao.getOutdatedRepos(CACHE_INVALIDATION_TIME)
-	const originalLength = outdatedRepos.length
-	outdatedRepos = outdatedRepos.slice(0, githubRateLimit.remaining)
-	console.log(
-		`Draft repos: ${originalLength}; remaining rate limit: ${githubRateLimit.remaining}; Will index ${outdatedRepos.length} repos`
-	)
+	// const originalLength = outdatedRepos.length
+	// outdatedRepos = outdatedRepos.slice(0, githubRateLimit.remaining)
+	// console.log(
+	// 	`Draft repos: ${originalLength}; remaining rate limit: ${githubRateLimit.remaining}; Will index ${outdatedRepos.length} repos`
+	// )
+	console.log(`Will index ${outdatedRepos.length} repos`);
+	
 	if (options.batch) {
-		throw new Error("Not Implemented")
-		// const repos: Repo[] = outdatedRepos
-		// 	.map((x) => x.url)
-		// 	.map(parseOwnerAndRepoFromGithubUrl)
-		// 	.filter((x) => x !== null)
-		// const batchSize = 20
-		// const indexedUrls = await batchIndexGitHubReposWithBatchSize(repos, batchSize)
+		// throw new Error("Not Implemented")
+		const repos: Repo[] = outdatedRepos
+			.map((x) => x.url)
+			.map(parseOwnerAndRepoFromGithubUrl)
+			.filter((x) => x !== null)
+		const batchSize = 20
+		await batchIndexGitHubReposWithBatchSize(repos, batchSize)
 	} else {
 		const pbar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
 		pbar.start(outdatedRepos.length, 0)
+		const queue = new PQueue({ concurrency: 5 })
 		for (const repo of outdatedRepos) {
-			pbar.increment()
-			await indexGitHubRepo(repo.url)
+			// await indexGitHubRepo(repo.url)
+			queue.add(() => {
+				pbar.increment()
+				return indexGitHubRepo(repo.url)
+			})
 		}
 		pbar.stop()
 	}

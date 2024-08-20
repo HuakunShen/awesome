@@ -1,7 +1,8 @@
-import { SortDirection } from "@awesome/neo4j-graphql"
+import { SortDirection, type RepoCreateInput, type RepoUpdateInput } from "@awesome/neo4j-graphql"
 import { getSdk, type RepositoryQuery } from "@hk/github-graphql/req"
 import cliProgress from "cli-progress"
 import { GraphQLClient } from "graphql-request"
+import PQueue from "p-queue"
 import type { Repo, RepoMetadata } from "types"
 import { getGitHubGraphqlSdk, getGitHubRepoMetadataInBatch } from "./api"
 import { CACHE_INVALIDATION_TIME } from "./constant"
@@ -99,12 +100,7 @@ export async function indexGitHubRepo(githubRepoUrl: string, awesomeListId?: str
 			return
 		} else {
 			console.log(`Repo ${cleanGitHubRepoUrl} is not up to date; updating`)
-			console.log("last mod: ")
-			console.log(lastModified)
-			console.log(typeof lastModified)
-
-			console.log(thresholdDate)
-			return
+			// return
 		}
 	} else {
 		console.log(`Repo ${cleanGitHubRepoUrl} is not in database; adding`)
@@ -184,6 +180,7 @@ async function addRepoToDB(
 					homepageUrl: "",
 					// licenseInfo:
 					openIssuesCount: 0,
+					description: undefined,
 					closeIssuesCount: 0,
 					pullRequestsCount: 0,
 					releasesCount: 0,
@@ -198,12 +195,13 @@ async function addRepoToDB(
 			})
 		}
 	} else {
-		const newData = {
+		const newData: RepoCreateInput & RepoUpdateInput = {
 			name: repoName,
 			owner,
 			url: githubRepoUrl,
 			stars: repoMetadata.stargazerCount,
 			diskUsage: repoMetadata.diskUsage ?? 0,
+			description: repoMetadata.description,
 			forkCount: repoMetadata.forkCount,
 			hasSponsorshipsEnabled: repoMetadata.hasSponsorshipsEnabled,
 			homepageUrl: repoMetadata.homepageUrl,
@@ -286,10 +284,7 @@ export async function batchIndexGitHubRepos(
  * @param repos
  * @param batchSize
  */
-export async function batchIndexGitHubReposWithBatchSize(
-	repos: Repo[],
-	batchSize = 10
-): Promise<string[]> {
+export async function batchIndexGitHubReposWithBatchSize(repos: Repo[], batchSize = 10) {
 	const batches = []
 	for (let i = 0; i < repos.length; i += batchSize) {
 		batches.push(repos.slice(i, i + batchSize))
@@ -300,10 +295,15 @@ export async function batchIndexGitHubReposWithBatchSize(
 	const pbar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
 	pbar.start(batches.length, 0)
 	let indexedUrls: string[] = []
+	const queue = new PQueue({ concurrency: 2 })
 	for (const batch of batches) {
-		pbar.increment()
-		indexedUrls = [...indexedUrls, ...(await batchIndexGitHubRepos(batch))]
+		queue.add(() => {
+			pbar.increment()
+			return batchIndexGitHubRepos(batch)
+		})
+		// pbar.increment()
+		// indexedUrls = [...indexedUrls, ...(await batchIndexGitHubRepos(batch))]
 	}
 	pbar.stop()
-	return indexedUrls
+	// return indexedUrls
 }
