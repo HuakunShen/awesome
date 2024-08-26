@@ -6,8 +6,6 @@ import { fetchGitHubRepoReadme } from "@/scraper"
 import { getGithubRepoUrl } from "@/url"
 import cliProgress from "cli-progress"
 import pLimit from "p-limit"
-import PQueue from "p-queue"
-import type { Repo } from "types"
 
 /**
  * Rebuild the is-awesome relation between repo and awesome list
@@ -15,10 +13,9 @@ import type { Repo } from "types"
 export async function refreshIsAwesome() {
 	let allLists = await neo4jSdk.AwesomeLists()
 	const existingListUrls = allLists.data.awesomeLists.map((list) => list.url)
-
 	const pbar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
 	pbar.start(existingListUrls.length, 0)
-	// const queue = new PQueue({concurrency: 5});
+	const reposNotInDB: string[] = []
 	for (const repo of existingListUrls) {
 		pbar.increment()
 		const alistParse = parseOwnerAndRepoFromGithubUrl(repo)
@@ -39,20 +36,22 @@ export async function refreshIsAwesome() {
 				continue
 			}
 			const repoUrl = getGithubRepoUrl(parse.owner, parse.name)
-			// get db repo
-			const dbReposRes = await neo4jSdk.Repos({
-				where: {
-					url: repoUrl
-				}
-			})
-			const dbRepos = dbReposRes.data.repos
-			if (dbRepos.length === 0) {
-				logger.warn(`Repo not found in DB: ${repoUrl}`)
-				continue
-			}
-			const dbRepo = dbRepos[0]
+
 			jobs.push(
-				limit(() => {
+				limit(async () => {
+					// get db repo
+					const dbReposRes = await neo4jSdk.Repos({
+						where: {
+							url: repoUrl
+						}
+					})
+					const dbRepos = dbReposRes.data.repos
+					if (dbRepos.length === 0) {
+						logger.warn(`Repo not found in DB: ${repoUrl}`)
+						reposNotInDB.push(repoUrl)
+						return
+					}
+					const dbRepo = dbRepos[0]
 					// logger.debug(
 					// 	`Connection repo ${dbRepo.owner}/${dbRepo.name} to awesome list ${alistParse.owner}/${alistParse.name}`
 					// )
@@ -77,5 +76,7 @@ export async function refreshIsAwesome() {
 		}
 		await Promise.all(jobs)
 	}
+	console.log(reposNotInDB)
+	console.log("reposNotInDB length: ", reposNotInDB.length)
 	pbar.stop()
 }
