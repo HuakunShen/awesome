@@ -109,9 +109,9 @@ export const githubRepoUrls = [
 
 export const githubAwesomeList: Repo[] = [
 	{ owner: "tauri-apps", name: "awesome-tauri" },
-	{ owner: "vuejs", name: "awesome-vue" },
-	{ owner: "sindresorhus", name: "awesome" },
-	{ owner: "rust-unofficial", name: "awesome-rust" },
-	{ owner: "rust-unofficial", name: "awesome-rust" },
-	...(githubRepoUrls.map(parseOwnerAndRepoFromGithubUrl).filter((r) => r) as Repo[])
+	// { owner: "vuejs", name: "awesome-vue" },
+	// { owner: "sindresorhus", name: "awesome" },
+	// { owner: "rust-unofficial", name: "awesome-rust" },
+	// { owner: "rust-unofficial", name: "awesome-rust" },
+	// ...(githubRepoUrls.map(parseOwnerAndRepoFromGithubUrl).filter((r) => r) as Repo[])
 ]

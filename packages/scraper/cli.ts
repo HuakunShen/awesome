@@ -18,6 +18,7 @@ program
 	.option("--awesome-list-repos", "Check new repos added to Awesome Lists", false)
 	.option("--outdated-repos", "Refresh Repo Data for outdated repos", false)
 	.option("--batch", "Batch Mode (Try batch processing when possible)", false)
+	.option("--force", "Force Refresh", false)
 	.option(
 		"--draft-repos",
 		"Refresh Repo data for repos that are still in draft mode (no data at all)",
@@ -28,16 +29,18 @@ program
 		async (opts: {
 			newAwesomeList: boolean
 			awesomeListRepos: boolean
+			// reconnect: boolean
 			draftRepos: boolean
 			outdatedRepos: boolean
 			batch: boolean
+			force: boolean
 			isAwesome: boolean
 		}) => {
 			console.log("Refreshing", opts)
 			if (opts.newAwesomeList) {
 				await refreshNewAwesomeList()
 			} else if (opts.awesomeListRepos) {
-				await refreshAwesomeListRepos({ batch: opts.batch })
+				await refreshAwesomeListRepos({ batch: opts.batch, force: opts.force })
 			} else if (opts.outdatedRepos) {
 				await refreshOutDatedRepoData({ batch: opts.batch })
 			} else if (opts.draftRepos) {

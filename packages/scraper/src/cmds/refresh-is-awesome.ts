@@ -1,115 +1,81 @@
-import { githubAwesomeList } from "@/../data/awesome-list"
-import { fetchGitHubApiRateLimit } from "@/api"
-import { CACHE_INVALIDATION_TIME, DAY_MS, GitHubRepoUrlRegex } from "@/constant"
-import {
-	constructGitHubRepoUrl,
-	parseMarkdownLinks,
-	parseOwnerAndRepoFromGithubUrl
-} from "@/parser"
+import { GitHubRepoUrlRegex } from "@/constant"
+import { neo4jSdk } from "@/db"
+import { logger } from "@/logger"
+import { parseMarkdownLinks, parseOwnerAndRepoFromGithubUrl } from "@/parser"
 import { fetchGitHubRepoReadme } from "@/scraper"
 import { getGithubRepoUrl } from "@/url"
-import chalk from "chalk"
 import cliProgress from "cli-progress"
+import pLimit from "p-limit"
+import PQueue from "p-queue"
+import type { Repo } from "types"
 
 /**
- * Refresh relationships between awesome list and repos
+ * Rebuild the is-awesome relation between repo and awesome list
  */
 export async function refreshIsAwesome() {
-	// const githubRateLimit = await fetchGitHubApiRateLimit()
-	const allLists = await db.getAllAwesomeLists()
-	// map each awesome list repo URL to a set of awesome repos
-	const listToRepos: Record<string, Set<string>> = {}
+	let allLists = await neo4jSdk.AwesomeLists()
+	const existingListUrls = allLists.data.awesomeLists.map((list) => list.url)
 
-	console.log(chalk.blue(`Map Awesome List to Repos`))
-	const bar1 = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
-	bar1.start(allLists.length, 0)
-	for (const list of allLists) {
-		bar1.increment()
-
-		const parse = parseOwnerAndRepoFromGithubUrl(list.url)
-		if (!parse) {
+	const pbar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
+	pbar.start(existingListUrls.length, 0)
+	// const queue = new PQueue({concurrency: 5});
+	for (const repo of existingListUrls) {
+		pbar.increment()
+		const alistParse = parseOwnerAndRepoFromGithubUrl(repo)
+		if (!alistParse) {
 			continue
 		}
-		const { owner, name: repoName } = parse
-		const awesomeReadme = await fetchGitHubRepoReadme(owner, repoName)
+		const awesomeListUrl = getGithubRepoUrl(alistParse.owner, alistParse.name)
+		const awesomeReadme = await fetchGitHubRepoReadme(alistParse.owner, alistParse.name)
 		const markdownLinks = parseMarkdownLinks(awesomeReadme)
-		// filter out non-github-repo links with regex
-		const githubRepos = markdownLinks.filter((link) => link.url.match(GitHubRepoUrlRegex))
-		for (const repo of githubRepos) {
-			if (!(list.url in listToRepos)) {
-				listToRepos[list.url] = new Set<string>()
+		const githubReposInAwesomeReadme = markdownLinks.filter((link) =>
+			link.url.match(GitHubRepoUrlRegex)
+		)
+		const limit = pLimit(10) // at most 10 concurrent connections
+		const jobs = []
+		for (const repo of githubReposInAwesomeReadme) {
+			const parse = parseOwnerAndRepoFromGithubUrl(repo.url)
+			if (!parse) {
+				continue
 			}
-			listToRepos[list.url].add(repo.url)
+			const repoUrl = getGithubRepoUrl(parse.owner, parse.name)
+			// get db repo
+			const dbReposRes = await neo4jSdk.Repos({
+				where: {
+					url: repoUrl
+				}
+			})
+			const dbRepos = dbReposRes.data.repos
+			if (dbRepos.length === 0) {
+				logger.warn(`Repo not found in DB: ${repoUrl}`)
+				continue
+			}
+			const dbRepo = dbRepos[0]
+			jobs.push(
+				limit(() => {
+					// logger.debug(
+					// 	`Connection repo ${dbRepo.owner}/${dbRepo.name} to awesome list ${alistParse.owner}/${alistParse.name}`
+					// )
+					return neo4jSdk.UpdateRepos({
+						where: {
+							url: dbRepo.url
+						},
+						connect: {
+							inAwesomeListAwesomeLists: [
+								{
+									where: {
+										node: {
+											url: awesomeListUrl
+										}
+									}
+								}
+							]
+						}
+					})
+				})
+			)
 		}
+		await Promise.all(jobs)
 	}
-	bar1.stop()
-	// map awesome list repo url to Database ID
-	const awesomeListUrlToId = allLists.reduce(
-		(acc, list) => {
-			acc[list.url] = list.id
-			return acc
-		},
-		{} as Record<string, string>
-	)
-	const allRepos = await db.client.repo.findMany({
-		select: {
-			id: true,
-			url: true
-		}
-	})
-	// const allRepos = await awesomeRepoDao.getAll({})
-	const repoToId = allRepos.reduce(
-		(acc, repo) => {
-			acc[repo.url] = repo.id
-			return acc
-		},
-		{} as Record<string, string>
-	)
-
-	// const allIsAwesomes = await isAwesomeDao.getAll({})
-
-	// // candidates is a set of repo and list IDs that are not in the isAwesome table
-	// const candidates: Set<{ repoId: string; listId: string }> = new Set()
-	// Object.entries(listToRepos).forEach(async ([listUrl, repoUrls]) => {
-	// 	const listId = awesomeListUrlToId[listUrl]
-	// 	for (const repoUrl of repoUrls) {
-	// 		const repoId = repoToId[repoUrl]
-	// 		if (repoId) {
-	// 			const isAwesome = allIsAwesomes.find(
-	// 				(isAwesome) => isAwesome.repo === repoId && isAwesome.awesome_list === listId
-	// 			)
-	// 			if (!isAwesome) {
-	// 				candidates.add({ repoId, listId })
-	// 			}
-	// 		}
-	// 	}
-	// })
-	// console.log(
-	// 	`${listToRepos.length} pairs of awesome list to repos; Will add ${candidates.size} non-existent candidates to add to isAwesome table`
-	// )
-
-	// async function runJob(job: {
-	// 	repoId: string
-	// 	listId: string
-	// }): Promise<IsAwesomeResponse | null | Error> {
-	// 	try {
-	// 		bar2.increment()
-	// 		const res = await isAwesomeDao.insertIfNotExist({
-	// 			repo: job.repoId,
-	// 			awesome_list: job.listId
-	// 		})
-	// 		return res
-	// 	} catch (error) {
-	// 		return error as Error
-	// 	}
-	// }
-
-	// const bar2 = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
-	// for (const candidate of candidates) {
-	// 	const res = await runJob(candidate)
-	// 	if (res instanceof Error) {
-	// 		console.log("error", res, candidate)
-	// 	}
-	// }
-	// bar2.stop()
+	pbar.stop()
 }

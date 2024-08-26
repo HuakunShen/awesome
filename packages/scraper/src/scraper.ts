@@ -143,6 +143,7 @@ async function addRepoToDB(
 				]
 			}
 		: undefined
+
 	if (!repoMetadata) {
 		console.warn(`Failed to fetch metadata for ${githubRepoUrl}`)
 		// await db.upsertRepo(githubRepoMetadataToDBRepo(repoMetadata))
@@ -155,7 +156,6 @@ async function addRepoToDB(
 		// 	}
 		// })
 		if (dbRepo) {
-			// update
 			await neo4jSdk.UpdateRepos({
 				where: {
 					url: githubRepoUrl
@@ -218,6 +218,7 @@ async function addRepoToDB(
 		if (dbRepo) {
 			await neo4jSdk.UpdateRepos({
 				where: {
+					// id: dbRepo.id
 					url: githubRepoUrl
 				},
 				update: newData,

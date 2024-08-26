@@ -19,7 +19,7 @@ import type { Repo, RepoMetadata } from "types"
  * Add newly added awesome list to DB
  */
 export async function refreshNewAwesomeList() {
-	logger.info(`Refresh Awesome List: Add new Awesome List and Draft Repos`)
+	logger.info(`Refresh Awesome List: Add new Awesome List`)
 	let allLists = await neo4jSdk.AwesomeLists()
 	const existingListUrls = allLists.data.awesomeLists.map((list) => list.url)
 	const awesomeReposUrlsNotInDb = new Set(
@@ -67,9 +67,9 @@ export async function refreshNewAwesomeList() {
  * Don't worry about repo data here, if repo doesn't exist, set `draft` to true
  * Repo data will be refreshed in another command
  */
-export async function refreshAwesomeListRepos(options: { batch?: boolean } = {}) {
-	const thresholdDate = new Date(Date.now() - 0) // ! for dev only, force refresh all
-	// const thresholdDate = new Date(Date.now() - CACHE_INVALIDATION_TIME)
+export async function refreshAwesomeListRepos(options: { batch?: boolean; force?: boolean } = {}) {
+	const cacheInvalidTime = options.force ? 0 : CACHE_INVALIDATION_TIME
+	const thresholdDate = new Date(Date.now() - cacheInvalidTime)
 	const outdatedAwesomeLists = (
 		await neo4jSdk.AwesomeLists({
 			where: {
